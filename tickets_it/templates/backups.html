@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}Sauvegardes{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Sauvegardes</h1>
+<p class="lead">Une copie de la base est faite automatiquement chaque nuit à partir de {{ heure }}h, avec les nouvelles pièces jointes. Les copies de plus de {{ jours }} jours sont supprimées (la plus récente est toujours conservée).</p>
+<div class="panel"><dl class="kv">
+ <dt>Dernière sauvegarde</dt><dd>{{ last|dt if last else 'Aucune pour l\'instant' }}</dd>
+ <dt>Résultat</dt><dd>{% if status == 'ok' %}<span class="badge sla-ok">Réussie</span>{% elif status %}<span class="badge sla-late">{{ status }}</span>{% else %}–{% endif %}</dd>
+ <dt>Dossier</dt><dd class="link">{{ dossier }}</dd>
+ <dt>2e emplacement</dt><dd class="link">{{ copie or 'non configuré (Paramètres → Sauvegardes) : pensez à copier ce dossier sur un autre disque ou serveur' }}</dd></dl>
+<form method="post" style="margin-top:14px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn sm">Sauvegarder maintenant</button></form></div>
+<div class="panel tablewrap" style="padding:0">
+{% if items %}<table><thead><tr><th>Fichier</th><th>Date</th><th class="num">Taille</th></tr></thead><tbody>
+{% for b in items %}<tr><td><a href="{{ url_for('backup_download', name=b['name']) }}">{{ b['name'] }}</a></td><td>{{ b['date']|dt }}</td><td class="num">{{ b['size']|fsize }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<div class="empty">Aucune sauvegarde pour l'instant.</div>{% endif %}</div>
+<div class="panel"><h2>Restaurer une sauvegarde</h2>
+<p style="margin:0">Arrêtez l'application, remplacez le fichier <code>tickets.db</code> par la copie souhaitée (renommée en <code>tickets.db</code>), puis relancez-la. Les pièces jointes se trouvent dans le dossier <code>fichiers</code> de la sauvegarde.</p></div>
+{% endblock %}

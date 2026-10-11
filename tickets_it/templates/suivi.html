@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% from 'macros.html' import files with context %}
+{% block title %}Ticket #{{ t['id'] }}{% endblock %}{% block mainclass %}narrow{% endblock %}
+{% block content %}
+{% if created %}<div class="flash ok">Votre demande est enregistrée sous le numéro <b>#{{ t['id'] }}</b>. Conservez cette page : c'est votre lien de suivi.</div>{% endif %}
+<h1>#{{ t['id'] }} · {{ t['title'] }}</h1>
+<p class="lead"><span class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span>
+ &nbsp;{{ t['category'] }} · ouvert le {{ t['created_at']|dt }}{% if t['assignee'] %} · pris en charge par {{ t['assignee'] }}{% endif %}</p>
+<div class="panel"><h2>Votre demande</h2><div class="desc">{{ t['description'] }}</div>{{ files(atts.get(0), t['token']) }}</div>
+<div class="panel"><h2>Échanges</h2>
+{% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }}"><div class="who">{{ c['author'] }}{% if c['is_staff'] %} (service informatique){% endif %} · {{ c['created_at']|dt }}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id']), t['token']) }}</div>
+{% else %}<p class="meta">Aucun message pour l'instant.</p>{% endfor %}
+{% if t['status'] != 'Clos' %}
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<label for="body">{{ 'Le problème persiste ? Répondez ici pour rouvrir le ticket.' if t['status']=='Résolu' else 'Ajouter une précision' }}</label>
+<textarea id="body" name="body"></textarea>
+<label for="files">Joindre un fichier <small>(facultatif)</small></label><input id="files" type="file" name="files" multiple accept="{{ upload_accept }}">
+<p><button class="btn sm">Envoyer</button></p></form>
+{% else %}<p class="meta">Ce ticket est clos. Pour un nouveau problème, créez une nouvelle demande.</p>{% endif %}
+</div>
+{% endblock %}

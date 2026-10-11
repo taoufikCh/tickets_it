@@ -1,0 +1,76 @@
+{% extends 'base.html' %}{% from 'macros.html' import files, origine with context %}
+{% block title %}Projet #{{ p['id'] }}{% endblock %}
+{% block content %}
+{% set d = due_badge(p['due_date'], p['status'] in ['Terminé','Annulé']) %}
+<p class="meta" style="margin:0 0 6px"><a href="{{ url_for('projects_board') }}">← Tous les projets</a></p>
+<h1>#{{ p['id'] }} · {{ p['title'] }}</h1>
+<p class="lead"><span class="badge s-{{ p['status']|slug }}">{{ p['status'] }}</span>
+ {% if d[1] %}<span class="badge sla-{{ d[0] or 'pause' }}">{{ d[1] }}</span>{% endif %} &nbsp;créé le {{ p['created_at']|dt }}</p>
+{% if not can_edit %}<div class="flash warn">Seul le responsable du projet ({{ p['owner'] or '—' }}) ou un administrateur peut le modifier. Vous pouvez néanmoins écrire un commentaire et cocher les étapes qui vous sont assignées.</div>{% endif %}
+{% if p['status']=='Proposé' %}
+<div class="panel" style="border-color:#ecd08a;background:#fffaf0"><h2>Demande à valider</h2>
+<p style="margin-top:0">Proposée par <b>{{ p['requester_name'] }}</b>{% if p['department'] %} ({{ p['department'] }}){% endif %}{% if p['wanted_date'] %}, souhaitée pour le {{ p['wanted_date'][8:10] }}/{{ p['wanted_date'][5:7] }}/{{ p['wanted_date'][:4] }}{% endif %}.</p>
+<form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="accept">
+ <div><label for="aowner" style="margin-top:0">Responsable</label><select id="aowner" name="owner">{% for u in techs %}<option value="{{ u['id'] }}" {{ 'selected' if u['id']==g.user['id'] }}>{{ u['name'] }}</option>{% endfor %}</select></div>
+ <div><label for="adue" style="margin-top:0">Échéance prévue</label><input id="adue" type="date" name="due" value="{{ p['wanted_date'] }}"></div>
+ <div><button class="btn sm">Accepter la demande</button></div></form>
+<form method="post" style="margin-top:14px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="refuse">
+ <label for="reason" style="margin-top:0">Ou refuser, avec un motif communiqué au demandeur</label><input id="reason" name="body" placeholder="Ex. : à traiter plutôt avec le service communication">
+ <p style="margin:10px 0 0"><button class="btn sec sm">Refuser la demande</button></p></form></div>
+{% endif %}
+<div class="layout"><div>
+ <div class="panel"><h2>Description</h2><div class="desc">{{ p['description'] or 'Aucune description.' }}</div>{{ files(atts.get(0), None, True) }}
+  <details style="margin-top:14px"><summary class="meta" style="cursor:pointer">Modifier le titre et la description</summary>
+  <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="edit">
+   <label for="etitle">Titre</label><input id="etitle" name="title" value="{{ p['title'] }}" required>
+   <label for="edesc">Description</label><textarea id="edesc" name="description">{{ p['description'] }}</textarea>
+   <label for="edept">Service concerné</label><input id="edept" name="department" value="{{ p['department'] }}"{% if services %} list="services"{% endif %}>{% if services %}<datalist id="services">{% for s in services %}<option value="{{ s }}">{% endfor %}</datalist>{% endif %}
+   <p><button class="btn sm">Enregistrer</button></p></form></details></div>
+ <div class="panel"><h2>Étapes{% if total %} <span class="meta">({{ done }}/{{ total }})</span>{% endif %}</h2>
+  {% if total %}<div class="bar" style="margin-bottom:12px"><i style="width:{{ (100*done/total)|round|int }}%"></i></div>{% endif %}
+  {% for k in tasks %}{% set kd = due_badge(k['due_date'], k['done']) %}
+  <div class="taskrow">
+   <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="toggle_task"><input type="hidden" name="id" value="{{ k['id'] }}">
+    <label class="inline" style="margin:0"><input type="checkbox" {{ 'checked' if k['done'] }} onchange="this.form.submit()"> <span class="{{ 'done' if k['done'] }}">{{ k['title'] }}</span></label></form>
+   <span class="meta">{{ k['assignee'] or '' }}</span>
+   {% if kd[1] and not k['done'] %}<span class="badge sla-{{ kd[0] }}">{{ kd[1] }}</span>{% endif %}
+   <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete_task"><input type="hidden" name="id" value="{{ k['id'] }}">
+    <button class="x" aria-label="Supprimer l'étape « {{ k['title'] }} »" onclick="return confirm('Supprimer cette étape ?')">×</button></form>
+  </div>
+  {% else %}<p class="meta">Aucune étape. Découpez le projet en étapes pour suivre son avancement.</p>{% endfor %}
+  <form method="post" class="addtask"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add_task">
+   <input name="title" placeholder="Nouvelle étape" aria-label="Titre de la nouvelle étape" required>
+   <select name="assignee" aria-label="Responsable de l'étape"><option value="">Non assignée</option>{% for u in techs %}<option value="{{ u['id'] }}">{{ u['name'] }}</option>{% endfor %}</select>
+   <input type="date" name="due" aria-label="Échéance de l'étape"><button class="btn sec sm">Ajouter</button></form>
+ </div>
+ <div class="panel"><h2>Historique</h2>
+ {% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }} {{ 'internal' if c['internal'] }}">
+  <div class="who">{{ c['author'] }} · {{ c['created_at']|dt }}{% if c['internal'] %} · note interne (invisible du demandeur){% endif %}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id']), None, True) }}</div>
+ {% else %}<p class="meta">Aucun message.</p>{% endfor %}
+ <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="comment">
+  <label for="body">Écrire au demandeur ou ajouter une note</label><textarea id="body" name="body"></textarea>
+  <label for="files">Joindre un fichier <small>(facultatif)</small></label><input id="files" type="file" name="files" multiple accept="{{ upload_accept }}">
+  <label class="inline"><input type="checkbox" name="internal" value="1"> Note interne (ne pas montrer au demandeur)</label>
+  <p><button class="btn sm">Ajouter</button></p></form></div>
+ </div>
+ <aside>
+  <form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="update"><h2>Suivi</h2>
+   <label for="status" style="margin-top:0">Statut</label><select id="status" name="status">{% for s in statuts %}<option {{ 'selected' if p['status']==s }}>{{ s }}</option>{% endfor %}</select>
+   <label for="owner">Responsable</label><select id="owner" name="owner"><option value="">Non assigné</option>{% for u in techs %}<option value="{{ u['id'] }}" {{ 'selected' if p['owner_id']==u['id'] }}>{{ u['name'] }}</option>{% endfor %}</select>
+   <label for="due">Échéance</label><input id="due" type="date" name="due" value="{{ p['due_date'] }}">
+   <p style="margin:16px 0 0"><button class="btn sm">Enregistrer</button></p></form>
+  <div class="panel"><h2>Demandeur</h2><dl class="kv">
+   <dt>Origine</dt><dd>{{ origine(p) }}</dd>
+   <dt>Nom</dt><dd>{{ p['requester_name'] }}</dd>
+   {% if p['requester_email'] %}<dt>Email</dt><dd><a href="mailto:{{ p['requester_email'] }}">{{ p['requester_email'] }}</a></dd>{% endif %}
+   {% if p['department'] %}<dt>Service</dt><dd>{{ p['department'] }}</dd>{% endif %}
+   {% if p['wanted_date'] %}<dt>Souhaité</dt><dd>{{ p['wanted_date'][8:10] }}/{{ p['wanted_date'][5:7] }}/{{ p['wanted_date'][:4] }}</dd>{% endif %}
+  </dl><p class="meta" style="margin:12px 0 4px">Lien de suivi du demandeur :</p><div class="link">{{ link }}</div></div>
+  <div class="panel"><h2>Tickets liés</h2>
+   {% for t in tickets %}<form method="post" style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="unlink_ticket"><input type="hidden" name="id" value="{{ t['id'] }}">
+    <a href="{{ url_for('admin_ticket', tid=t['id']) }}">#{{ t['id'] }} · {{ t['title'] }}</a><button class="x" aria-label="Détacher le ticket #{{ t['id'] }}">×</button></form>
+   {% else %}<p class="meta" style="margin-top:0">Aucun ticket lié.</p>{% endfor %}
+   <form method="post" style="display:flex;gap:8px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="link_ticket">
+    <input name="ticket" inputmode="numeric" placeholder="N° du ticket" aria-label="Numéro du ticket à lier" required><button class="btn sec sm">Lier</button></form></div>
+ </aside></div>
+{% endblock %}

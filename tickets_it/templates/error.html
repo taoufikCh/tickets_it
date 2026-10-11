@@ -1,0 +1,2 @@
+{% extends 'base.html' %}{% block title %}Erreur{% endblock %}{% block mainclass %}narrow{% endblock %}
+{% block content %}<h1>Erreur {{ code }}</h1><p class="lead">{{ msg }}</p><p><a class="btn sec" href="{{ url_for('nouveau') }}">Retour à l'accueil</a></p>{% endblock %}

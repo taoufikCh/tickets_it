@@ -1,0 +1,11 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Sauvegarde automatique</h2>
+<label class="inline" style="margin-top:6px"><input type="checkbox" name="backup_auto" value="1" {{ 'checked' if auto }}> <b>Sauvegarder automatiquement la base et les pièces jointes chaque nuit</b></label>
+<div class="row"><div><label for="backup_hour">À partir de <small>(heure, 0 à 23)</small></label><input id="backup_hour" name="backup_hour" inputmode="numeric" value="{{ hour }}"></div>
+<div><label for="backup_days">Conserver <small>(jours)</small></label><input id="backup_days" name="backup_days" inputmode="numeric" value="{{ days }}"></div></div>
+<label for="backup_copy">2e emplacement <small>(autre disque ou partage réseau monté, facultatif mais recommandé)</small></label>
+<input id="backup_copy" name="backup_copy" value="{{ copy }}" placeholder="/mnt/nas/tickets  ou  D:\Sauvegardes\tickets">
+<p class="meta" style="margin:4px 0 0">L'accès en écriture est vérifié à l'enregistrement. Dossier principal (non modifiable ici) : <span class="link">{{ main }}</span></p>
+<p style="margin:18px 0 0"><button class="btn">Enregistrer</button> <a class="btn sec" href="{{ url_for('backups_page') }}" style="margin-left:6px">Voir les sauvegardes</a></p></form>
+{% endblock %}

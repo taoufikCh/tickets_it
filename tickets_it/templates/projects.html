@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block title %}Projets{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<h1 style="margin:0">Projets</h1><a class="btn sm" href="{{ url_for('project_new') }}">Nouveau projet</a></div>
+{% if cols['Proposé'] %}<div class="flash warn"><b>{{ cols['Proposé']|length }}</b> demande{{ 's' if cols['Proposé']|length>1 }} de projet à valider (colonne « Proposé »).</div>{% endif %}
+<form method="get" class="panel" style="display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end">
+ <div><label for="q" style="margin:0 0 3px;font-size:13px">Recherche</label><input id="q" name="q" value="{{ f.get('q','') }}" placeholder="Titre, service, demandeur, n°"></div>
+ <div><label for="owner" style="margin:0 0 3px;font-size:13px">Responsable</label><select id="owner" name="owner"><option value="">Tous</option><option value="moi" {{ 'selected' if f.get('owner')=='moi' }}>Mes projets</option><option value="aucun" {{ 'selected' if f.get('owner')=='aucun' }}>Sans responsable</option></select></div>
+ <div><button class="btn sm">Filtrer</button></div></form>
+<div class="board">
+{% for col in colonnes %}<section class="bcol" aria-label="{{ col }}">
+ <h2><span class="badge s-{{ col|slug }}">{{ col }}</span> <span class="meta">{{ cols[col]|length }}{{ ' (15 derniers)' if col=='Terminé' and cols[col]|length==15 }}</span></h2>
+ {% for p in cols[col] %}{% set d = due_badge(p['due_date'], col=='Terminé') %}
+ <a class="card" href="{{ url_for('project_detail', pid=p['id']) }}">
+  <b>{{ p['title'] }}</b>
+  <div class="meta">{{ p['department'] or p['requester_name'] }}{% if p['owner'] %} · {{ p['owner'] }}{% endif %}</div>
+  {% if p['n_tasks'] %}<div class="bar" style="margin:8px 0 3px"><i style="width:{{ (100*p['n_done']/p['n_tasks'])|round|int }}%"></i></div><div class="meta">{{ p['n_done'] }}/{{ p['n_tasks'] }} étapes</div>{% endif %}
+  {% if d[1] %}<div style="margin-top:8px"><span class="badge sla-{{ d[0] or 'pause' }}">{{ d[1] }}</span></div>{% endif %}
+ </a>
+ {% else %}<p class="meta">Aucun projet</p>{% endfor %}
+</section>{% endfor %}
+</div>
+{% if annules %}<details style="margin-top:6px"><summary class="meta" style="cursor:pointer">Projets annulés ou refusés ({{ annules|length }})</summary>
+<ul>{% for p in annules %}<li><a href="{{ url_for('project_detail', pid=p['id']) }}">#{{ p['id'] }} · {{ p['title'] }}</a> <span class="meta">{{ p['department'] or p['requester_name'] }}</span></li>{% endfor %}</ul></details>{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}{% block title %}Techniciens{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Techniciens</h1><p class="lead">Comptes qui accèdent à l'espace technicien. Les droits de chaque rôle sont détaillés dans <a href="{{ url_for('settings_page', section='droits') }}">Paramètres → Droits</a> ; un technicien avec une adresse email peut recevoir les alertes (si l'envoi d'emails est activé).</p>
+{% for u in users %}{% set lk = locked.get(u['username'], 0) %}
+<div class="panel" style="padding:14px 18px">
+ <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+  <div><b>{{ u['name'] }}</b> <span class="meta">· {{ u['username'] }}</span>
+   <span class="badge {{ 'sla-ok' if u['role']=='admin' else ('s-clos' if u['role']=='lecteur' else 's-nouveau') }}">{{ roles.get(u['role'], u['role']) }}</span>
+   {% if lk %}<span class="badge sla-late">Verrouillé · {{ lk }} min</span>{% endif %}
+   <div class="meta">{{ u['email'] or "Pas d'adresse email" }}</div></div>
+  {% if lk %}<form method="post" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="unlock"><input type="hidden" name="id" value="{{ u['id'] }}"><button class="btn sm">Déverrouiller</button></form>{% endif %}
+ </div>
+ <details style="margin-top:10px"><summary class="meta" style="cursor:pointer">Modifier ce compte</summary>
+  <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ u['id'] }}">
+   <div class="row"><div><label for="n{{ u['id'] }}">Nom affiché</label><input id="n{{ u['id'] }}" name="name" value="{{ u['name'] }}" required></div>
+   <div><label for="e{{ u['id'] }}">Email</label><input id="e{{ u['id'] }}" type="email" name="email" value="{{ u['email'] }}"></div></div>
+   <div class="row"><div><label for="r{{ u['id'] }}">Rôle</label><select id="r{{ u['id'] }}" name="role">{% for k, v in roles.items() %}<option value="{{ k }}" {{ 'selected' if u['role']==k }}>{{ v }}</option>{% endfor %}</select></div>
+   <div><label for="p{{ u['id'] }}">Nouveau mot de passe <small>(laisser vide pour ne pas changer)</small></label><input id="p{{ u['id'] }}" type="password" name="password" autocomplete="new-password"></div></div>
+   <p><button class="btn sm">Enregistrer</button></p></form>
+  {% if u['id'] != g.user['id'] %}<form method="post" onsubmit="return confirm('Supprimer ce compte ?')"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ u['id'] }}"><button class="btn sec sm">Supprimer ce compte</button></form>{% endif %}
+ </details></div>
+{% endfor %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><h2>Ajouter un compte</h2>
+<div class="row"><div><label for="name" style="margin-top:0">Nom affiché</label><input id="name" name="name" required></div>
+<div><label for="username" style="margin-top:0">Identifiant</label><input id="username" name="username" required></div></div>
+<div class="row"><div><label for="password">Mot de passe <small>({{ pw_rule }})</small></label><input id="password" type="password" name="password" autocomplete="new-password" required></div>
+<div><label for="email">Email <small>(facultatif)</small></label><input id="email" type="email" name="email"></div></div>
+<label for="role">Rôle</label><select id="role" name="role">{% for k, v in roles.items() %}<option value="{{ k }}" {{ 'selected' if k=='tech' }}>{{ v }}</option>{% endfor %}</select>
+<p style="margin:18px 0 0"><button class="btn sm">Ajouter</button></p></form>
+{% endblock %}

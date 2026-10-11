@@ -1,0 +1,38 @@
+{% extends 'base.html' %}{% block title %}Tickets{% endblock %}
+{% block content %}
+{% if pending %}<div class="flash warn"><b>{{ pending }}</b> demande{{ 's' if pending>1 }} de projet à valider. <a href="{{ url_for('projects_board') }}">Voir les projets</a></div>{% endif %}
+{% if warn %}<div class="flash warn"><b>Sauvegarde :</b> {{ warn }} <a href="{{ url_for('backups_page') }}">Voir les sauvegardes</a></div>{% endif %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<h1 style="margin:0">Tickets</h1><a class="btn sec sm" href="{{ url_for('export_csv') }}">Exporter en CSV</a></div>
+<div class="stats">
+ <div class="stat"><b>{{ stats.ouverts }}</b><span>tickets ouverts</span></div>
+ <div class="stat {{ 'alert' if stats.nouveaux }}"><b>{{ stats.nouveaux }}</b><span>nouveaux</span></div>
+ <div class="stat {{ 'alert' if stats.non_assignes }}"><b>{{ stats.non_assignes }}</b><span>sans technicien</span></div>
+ <div class="stat {{ 'alert' if stats.urgents }}"><b>{{ stats.urgents }}</b><span>urgents</span></div>
+ <div class="stat {{ 'alert' if stats.en_retard }}"><b>{{ stats.en_retard }}</b><span>en retard</span></div>
+ <div class="stat"><b>{{ stats.resolus_7j }}</b><span>résolus sur 7 jours</span></div>
+</div>
+<form method="get" class="panel filters">
+ <div><label for="q">Recherche</label><input id="q" name="q" value="{{ f.get('q','') }}" placeholder="Mot-clé, nom, n°"></div>
+ <div><label for="status">Statut</label><select id="status" name="status">
+  <option value="ouverts" {{ 'selected' if status=='ouverts' }}>Ouverts</option><option value="tous" {{ 'selected' if status=='tous' }}>Tous</option>
+  {% for s in statuts %}<option {{ 'selected' if status==s }}>{{ s }}</option>{% endfor %}</select></div>
+ <div><label for="category">Catégorie</label><select id="category" name="category"><option value="">Toutes</option>{% for c in categories %}<option {{ 'selected' if f.get('category')==c }}>{{ c }}</option>{% endfor %}</select></div>
+ <div><label for="priority">Priorité</label><select id="priority" name="priority"><option value="">Toutes</option>{% for p in priorites %}<option {{ 'selected' if f.get('priority')==p }}>{{ p }}</option>{% endfor %}</select></div>
+ <div><label for="assignee">Technicien</label><select id="assignee" name="assignee"><option value="">Tous</option><option value="moi" {{ 'selected' if f.get('assignee')=='moi' }}>Mes tickets</option><option value="aucun" {{ 'selected' if f.get('assignee')=='aucun' }}>Non assignés</option></select></div>
+ <div><label for="sla">Délai</label><select id="sla" name="sla"><option value="">Tous</option><option value="retard" {{ 'selected' if f.get('sla')=='retard' }}>En retard</option></select></div>
+ <div><button class="btn sm">Filtrer</button></div>
+</form>
+<div class="panel tablewrap" style="padding:0">
+{% if tickets %}<table><thead><tr><th>N°</th><th>Sujet</th><th>Demandeur</th><th>Priorité</th><th>Statut</th><th>Technicien</th><th>Délai</th></tr></thead><tbody>
+{% for t in tickets %}{% set s = sla(t) %}<tr>
+ <td>#{{ t['id'] }}</td>
+ <td><a class="t" href="{{ url_for('admin_ticket', tid=t['id']) }}">{{ t['title'] }}</a><div class="meta">{{ t['category'] }} · mis à jour {{ t['updated_at']|dt }}</div></td>
+ <td>{{ t['requester_name'] }}<div class="meta">{{ t['department'] or '' }}{{ ' · ' if t['department'] and t['location'] }}{{ t['location'] or '' }}</div></td>
+ <td><span class="badge {{ prio_cls(t['priority']) }}">{{ t['priority'] }}</span></td>
+ <td><span class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span></td>
+ <td>{{ t['assignee'] or '–' }}</td>
+ <td><span class="badge sla-{{ s[0] }}">{{ s[1] }}</span></td></tr>{% endfor %}
+</tbody></table>{% else %}<div class="empty">Aucun ticket ne correspond à ces filtres.</div>{% endif %}
+</div>
+{% endblock %}

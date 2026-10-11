@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% block title %}Tickets récurrents{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Tickets récurrents</h1>
+<p class="lead">Des tickets créés automatiquement à {{ heure }}h, selon la fréquence choisie (vérification des sauvegardes, renouvellement de licences, contrôle des onduleurs…).</p>
+<div class="panel tablewrap" style="padding:0">
+{% if items %}<table><thead><tr><th>Ticket</th><th>Fréquence</th><th>Prochain ticket</th><th>Dernier ticket</th><th></th></tr></thead><tbody>
+{% for r in items %}<tr>
+ <td><b>{{ r['title'] }}</b><div class="meta">{{ r['category'] }} · {{ r['priority'] }}{% if r['assignee'] %} · {{ r['assignee'] }}{% endif %}</div></td>
+ <td>{{ freq_label(r) }}</td>
+ <td>{% if r['active'] %}{{ r['next_run']|dt }}{% else %}<span class="badge s-clos">En pause</span>{% endif %}</td>
+ <td class="meta">{{ r['last_run']|dt or '–' }}</td>
+ <td><form method="post" style="display:flex;gap:6px;flex-wrap:wrap"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ r['id'] }}">
+  <button class="btn sec sm" name="action" value="run">Créer maintenant</button>
+  <button class="btn sec sm" name="action" value="toggle">{{ 'Mettre en pause' if r['active'] else 'Réactiver' }}</button>
+  <button class="btn sec sm" name="action" value="delete" onclick="return confirm('Supprimer ce ticket récurrent ?')">Supprimer</button></form></td></tr>{% endfor %}
+</tbody></table>{% else %}<div class="empty">Aucun ticket récurrent. Créez le premier ci-dessous.</div>{% endif %}</div>
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><h2>Nouveau ticket récurrent</h2>
+<label for="title" style="margin-top:0">Titre du ticket</label><input id="title" name="title" placeholder="Vérifier les sauvegardes de la semaine" required>
+<label for="description">Description</label><textarea id="description" name="description" placeholder="Consignes pour le technicien" required></textarea>
+<div class="row"><div><label for="category">Catégorie</label><select id="category" name="category">{% for c in categories %}<option>{{ c }}</option>{% endfor %}</select></div>
+<div><label for="priority">Priorité</label><select id="priority" name="priority">{% for p in priorites %}<option {{ 'selected' if p==prio_default }}>{{ p }}</option>{% endfor %}</select></div></div>
+<div class="row"><div><label for="freq">Fréquence</label><select id="freq" name="freq">{% for k, v in frequences.items() %}<option value="{{ k }}" {{ 'selected' if k=='semaine' }}>{{ v }}</option>{% endfor %}</select></div>
+<div><label for="assignee">Assigner à</label><select id="assignee" name="assignee"><option value="">Personne (à prendre)</option>{% for u in techs %}<option value="{{ u['id'] }}">{{ u['name'] }}</option>{% endfor %}</select></div></div>
+<div class="row"><div id="wd"><label for="weekday">Jour de la semaine <small>(si hebdomadaire)</small></label><select id="weekday" name="weekday">{% for j in jours %}<option value="{{ loop.index0 }}">{{ j|capitalize }}</option>{% endfor %}</select></div>
+<div id="md"><label for="monthday">Jour du mois <small>(si mensuel, 1 à 28)</small></label><input id="monthday" name="monthday" type="number" min="1" max="28" value="1"></div></div>
+<p style="margin:18px 0 0"><button class="btn sm">Planifier</button></p></form>
+{% endblock %}

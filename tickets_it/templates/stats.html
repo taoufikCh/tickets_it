@@ -1,0 +1,41 @@
+{% extends 'base.html' %}{% block title %}Statistiques{% endblock %}
+{% macro bar(n, mx) %}<div class="bar"><i style="width:{{ (100*n/mx)|round if mx else 0 }}%"></i></div>{% endmacro %}
+{% macro pct(ok, closed) %}{{ ((100*ok/closed)|round|int ~ ' %') if closed else '–' }}{% endmacro %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<h1 style="margin:0">Statistiques</h1>
+<div class="seg">{% for v, l in [('30','30 jours'),('90','3 mois'),('365','12 mois'),('0','Tout')] %}<a href="?p={{ v }}" class="{{ 'on' if p==v or (p not in ['30','90','365','0'] and v=='90') }}">{{ l }}</a>{% endfor %}</div></div>
+<div class="stats">
+ <div class="stat"><b>{{ total['n'] }}</b><span>tickets créés</span></div>
+ <div class="stat"><b>{{ total['open'] or 0 }}</b><span>encore ouverts</span></div>
+ <div class="stat"><b>{{ total['avg_h']|hfmt }}</b><span>délai moyen de résolution</span></div>
+ <div class="stat"><b>{{ pct(total['sla_ok'] or 0, total['closed'] or 0) }}</b><span>résolus dans les délais</span></div>
+ <div class="stat {{ 'alert' if late }}"><b>{{ late }}</b><span>en retard actuellement</span></div>
+</div>
+<div class="panel"><h2>Tickets par mois (12 derniers mois)</h2>
+<div class="chart">{% for m in months %}<div class="col"><div class="pair">
+ <i title="{{ m.created }} créés" style="height:{{ (100*m.created/mx_month)|round }}%"></i><i class="c2" title="{{ m.closed }} résolus" style="height:{{ (100*m.closed/mx_month)|round }}%"></i></div><small>{{ m.label }}</small></div>{% endfor %}</div>
+<div class="legend"><span><i></i>Créés</span><span><i class="c2"></i>Résolus</span></div></div>
+<div class="panel tablewrap" style="padding:0"><table><thead><tr><th>Catégorie</th><th class="num">Tickets</th><th></th><th class="num">Ouverts</th><th class="num">Délai moyen</th><th class="num">Dans les délais</th></tr></thead><tbody>
+{% set mx = by_cat[0]['n'] if by_cat else 0 %}
+{% for r in by_cat %}<tr><td>{{ r['label'] }}</td><td class="num">{{ r['n'] }}</td><td>{{ bar(r['n'], mx) }}</td><td class="num">{{ r['open'] or 0 }}</td><td class="num">{{ r['avg_h']|hfmt }}</td><td class="num">{{ pct(r['sla_ok'] or 0, r['closed'] or 0) }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">Aucune donnée sur cette période.</td></tr>{% endfor %}</tbody></table></div>
+<div class="cols2">
+<div class="panel tablewrap" style="padding:0"><table><thead><tr><th>Technicien</th><th class="num">Tickets</th><th class="num">Ouverts</th><th class="num">Résolus</th><th class="num">Délai moyen</th></tr></thead><tbody>
+{% for r in by_tech %}<tr><td>{{ r['label'] }}</td><td class="num">{{ r['n'] }}</td><td class="num">{{ r['open'] or 0 }}</td><td class="num">{{ r['closed'] or 0 }}</td><td class="num">{{ r['avg_h']|hfmt }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">Aucune donnée.</td></tr>{% endfor %}</tbody></table></div>
+<div class="panel tablewrap" style="padding:0"><table><thead><tr><th>Priorité</th><th class="num">Tickets</th><th class="num">Délai moyen</th><th class="num">Dans les délais</th></tr></thead><tbody>
+{% for r in by_prio %}<tr><td><span class="badge {{ prio_cls(r['label']) }}">{{ r['label'] }}</span></td><td class="num">{{ r['n'] }}</td><td class="num">{{ r['avg_h']|hfmt }}</td><td class="num">{{ pct(r['sla_ok'] or 0, r['closed'] or 0) }}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">Aucune donnée.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<div class="cols2">
+<div class="panel"><h2>Pannes récurrentes</h2><p class="meta" style="margin-top:-6px">Même lieu et même catégorie, au moins 2 fois. Utile pour décider d'un remplacement.</p>
+{% for r in recurrent %}<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)"><span>{{ r['location'] }} · {{ r['category'] }}</span><b>{{ r['n'] }}×</b></div>
+{% else %}<p class="meta">Aucune récurrence détectée.</p>{% endfor %}</div>
+<div class="panel"><h2>Services les plus demandeurs</h2>
+{% set mxd = by_dept[0]['n'] if by_dept else 0 %}
+{% for r in by_dept %}<div style="display:grid;grid-template-columns:1fr 90px 30px;gap:10px;align-items:center;padding:6px 0"><span>{{ r['label'] }}</span>{{ bar(r['n'], mxd) }}<b style="text-align:right">{{ r['n'] }}</b></div>
+{% else %}<p class="meta">Renseignez le service dans le formulaire pour alimenter ce classement.</p>{% endfor %}</div>
+</div>
+<p class="meta">Les délais sont calculés en heures ouvrées ({{ work_txt }}) ; le délai moyen de résolution est mesuré en temps réel écoulé.</p>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}Réponses types{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Réponses types</h1>
+<p class="lead">Modèles de messages à insérer en un clic dans un ticket. Variables remplacées automatiquement :
+<code>{nom}</code> (demandeur), <code>{technicien}</code> (vous), <code>{numero}</code> (n° du ticket), <code>{lieu}</code> (bureau du demandeur).</p>
+{% for r in replies %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ r['id'] }}">
+<label for="t{{ r['id'] }}" style="margin-top:0">Titre</label><input id="t{{ r['id'] }}" name="title" value="{{ r['title'] }}" required>
+<label for="b{{ r['id'] }}">Texte</label><textarea id="b{{ r['id'] }}" name="body" required>{{ r['body'] }}</textarea>
+<p style="margin:14px 0 0;display:flex;gap:8px"><button class="btn sm" name="action" value="save">Enregistrer</button>
+<button class="btn sec sm" name="action" value="delete" formnovalidate onclick="return confirm('Supprimer cette réponse type ?')">Supprimer</button></p></form>
+{% endfor %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><h2>Ajouter une réponse type</h2>
+<label for="nt" style="margin-top:0">Titre</label><input id="nt" name="title" required>
+<label for="nb">Texte</label><textarea id="nb" name="body" required></textarea>
+<p style="margin:14px 0 0"><button class="btn sm">Ajouter</button></p></form>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'admin_settings/base.html' %}
+{% macro holrow(r) %}<tr>
+ <td><input type="date" name="hol_date_{{ r.i }}" value="{{ r.date }}" aria-label="Date du jour férié"></td>
+ <td><input name="hol_label_{{ r.i }}" value="{{ r.label }}" maxlength="60" placeholder="Nom (facultatif)" aria-label="Nom du jour férié"></td>
+ <td class="c"><input type="checkbox" name="hol_yearly_{{ r.i }}" value="1" {{ 'checked' if r.yearly }} aria-label="Se répète chaque année"></td>
+ <td class="c"><input type="checkbox" name="hol_del_{{ r.i }}" value="1" aria-label="Supprimer ce jour férié"></td></tr>{% endmacro %}
+{% block section %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Horaires d'ouverture du service</h2>
+<p class="meta" style="margin-top:-4px">Les délais cibles ne comptent que les heures ouvrées : en dehors de ces horaires, des jours ouvrés et des jours fériés, le chronomètre est arrêté.</p>
+<div class="row"><div><label for="work_start" style="margin-top:0">Ouverture</label><input id="work_start" type="time" name="work_start" value="{{ start }}" required></div>
+<div><label for="work_end" style="margin-top:0">Fermeture</label><input id="work_end" type="time" name="work_end" value="{{ end }}" required></div></div>
+<fieldset style="border:0;padding:0;margin:14px 0 0"><legend style="font-weight:600;padding:0">Jours ouvrés</legend>
+<div style="display:flex;flex-wrap:wrap;gap:4px 18px">{% for j in jours %}<label class="inline" style="margin-top:6px"><input type="checkbox" name="day_{{ loop.index0 }}" value="1" {{ 'checked' if loop.index0 in days }}> {{ j|capitalize }}</label>{% endfor %}</div></fieldset>
+
+<h2 style="margin-top:28px">Délai cible par priorité</h2>
+<p class="meta" style="margin-top:-4px">Temps maximal de traitement, en <b>heures ouvrées</b> (décimales acceptées : 1,5 = 1 h 30). Les noms des priorités se modifient dans l'onglet « Listes ».</p>
+<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">{% for p in prios %}
+ <div><label for="sla_{{ loop.index0 }}" style="margin-top:0">{{ p.name }} <small>(heures)</small></label><input id="sla_{{ loop.index0 }}" name="sla_{{ loop.index0 }}" inputmode="decimal" value="{{ p.sla|num }}"></div>{% endfor %}</div>
+{% if examples %}<div class="meta" style="margin-top:12px"><b>Avec les réglages actuels</b>, un ticket créé maintenant serait dû : {% for e in examples %}{{ e.name }} → {{ e.due }}{{ ' ; ' if not loop.last }}{% endfor %}.</div>{% endif %}
+
+<h2 style="margin-top:28px">Jours fériés et fermetures</h2>
+<p class="meta" style="margin-top:-4px">Jours non ouvrés en plus du week-end. Cochez « Chaque année » pour une date fixe (1er janvier…) ; les fêtes qui changent de date (fêtes religieuses…) sont à ajouter chaque année.</p>
+<div class="tablewrap"><table class="edit"><thead><tr><th>Date</th><th>Nom</th><th class="c">Chaque année</th><th class="c">Supprimer</th></tr></thead>
+<tbody id="hol-body" data-next="{{ hol_next }}">{% for r in hols %}{{ holrow(r) }}{% endfor %}</tbody></table></div>
+<input type="hidden" name="action" id="hol-action" value="">
+<p style="margin:10px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" id="addhol">Ajouter un jour férié</button>
+<button type="button" class="btn sec sm" id="addtn">Ajouter les jours fériés de Tunisie</button></p>
+<p class="meta" style="margin:6px 0 0">Ajoute les fêtes nationales (1er janv., 20 mars, 9 avril, 1er mai, 25 juillet, 13 août, 15 octobre, 17 décembre), chaque année, et les fêtes religieuses connues (Aïd, Ras el Am, Mouled) : leurs dates dépendent de l'observation de la lune, <b>vérifiez-les à l'annonce officielle</b>. Il n'y a pas de report quand une fête tombe un week-end.</p>
+<template id="hol-tpl">{{ holrow({'i':'__I__','date':'','label':'','yearly':False}) }}</template>
+
+<label class="inline" style="margin-top:24px"><input type="checkbox" name="recalc" value="1" checked> <span>Recalculer les échéances des tickets déjà ouverts avec ces nouveaux réglages <small>(sinon, seuls les nouveaux tickets sont concernés)</small></span></label>
+<p style="margin:16px 0 0"><button class="btn">Enregistrer</button></p></form>
+<script>
+(function(){
+  document.getElementById('addtn').onclick=function(){var a=document.getElementById('hol-action');a.value='tunisie';a.form.submit();};
+  document.getElementById('addhol').onclick=function(){
+    var tb=document.getElementById('hol-body'),t=document.getElementById('hol-tpl'),i=parseInt(tb.dataset.next,10);
+    tb.dataset.next=i+1;var w=document.createElement('tbody');w.innerHTML=t.innerHTML.replace(/__I__/g,i);
+    var row=w.querySelector('tr');tb.appendChild(row);row.querySelector('input').focus();};
+})();
+</script>
+{% endblock %}

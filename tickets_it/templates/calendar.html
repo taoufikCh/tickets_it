@@ -1,0 +1,35 @@
+{% extends 'base.html' %}{% block title %}Calendrier{% endblock %}
+{% macro chip(e) %}<a class="chip k-{{ e.kind }}{{ ' late' if e.late }}{{ ' done' if e.done }}" href="{{ e.url }}" title="{{ e.sub }}">{% if e.time %}<b>{{ e.time }}</b> {% endif %}{{ e.label }}</a>{% endmacro %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<h1 style="margin:0">Calendrier</h1>
+<div class="seg">
+ <a href="{{ url_for('calendar_page', m=prev, **keep) }}" aria-label="Mois précédent">&larr;</a>
+ <a href="{{ url_for('calendar_page', **keep) }}" class="{{ 'on' if mois==today.strftime('%Y-%m') }}">Aujourd'hui</a>
+ <a href="{{ url_for('calendar_page', m=next, **keep) }}" aria-label="Mois suivant">&rarr;</a></div></div>
+
+<form method="get" class="panel calfilter">
+ <input type="hidden" name="m" value="{{ mois }}"><input type="hidden" name="f" value="1">
+ <div><label for="qui" style="margin:0 0 3px;font-size:13px">Afficher</label><select id="qui" name="qui"><option value="moi" {{ 'selected' if qui=='moi' }}>Mon planning</option><option value="tous" {{ 'selected' if qui=='tous' }}>Toute l'équipe</option></select></div>
+ <div class="calkinds">{% for c, l in types %}<label class="inline" style="margin:0"><input type="checkbox" name="t" value="{{ c }}" {{ 'checked' if c in show }}> <span class="legdot k-{{ {'t':'ticket','k':'tache','p':'projet','r':'recurrent'}[c] }}"></span>{{ l }}</label>{% endfor %}</div>
+ <div><button class="btn sm">Appliquer</button></div>
+</form>
+
+<h2 style="font-size:20px;margin:0 0 10px">{{ titre }} <span class="meta" style="font-weight:400">· {{ total }} élément{{ 's' if total>1 }}</span></h2>
+<div class="calwrap"><table class="cal">
+<thead><tr>{% for j in jours %}<th class="{{ 'off' if loop.index0 not in workdays }}">{{ j[:3]|capitalize }}.</th>{% endfor %}</tr></thead><tbody>
+{% for week in weeks %}<tr>{% for d in week %}{% set iso = d.isoformat() %}{% set items = ev.get(iso, []) %}
+<td class="{{ 'out' if d.month != m }}{{ ' off' if d.weekday() not in workdays }}{{ ' ferie' if iso in feries }}{{ ' today' if d == today }}{{ ' sel' if iso == sel }}">
+ <a class="dnum" href="{{ url_for('calendar_page', m=mois, jour=iso, **keep) }}">{{ d.day }}</a>
+ {% if iso in feries %}<div class="fer" title="{{ feries[iso] }}">{{ feries[iso] }}</div>{% endif %}
+ {% for e in items[:3] %}{{ chip(e) }}{% endfor %}
+ {% if items|length > 3 %}<a class="more" href="{{ url_for('calendar_page', m=mois, jour=iso, **keep) }}">+ {{ items|length - 3 }} autre{{ 's' if items|length - 3 > 1 }}</a>{% endif %}
+</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+
+{% if sel_date %}<div class="panel" style="margin-top:16px"><h2>{{ jours[sel_date.weekday()]|capitalize }} {{ sel_date.day }} {{ ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][sel_date.month-1] }} {{ sel_date.year }}
+ {% if sel in feries %}<span class="badge sla-pause">{{ feries[sel] }}</span>{% elif sel_date.weekday() not in workdays %}<span class="badge s-clos">Jour non ouvré</span>{% endif %}</h2>
+{% for e in sel_ev %}<div class="taskrow"><span class="legdot k-{{ e.kind }}"></span><a href="{{ e.url }}" class="{{ 'done' if e.done }}" style="flex:1;min-width:200px">{% if e.time %}<b>{{ e.time }}</b> · {% endif %}{{ e.label }}</a><span class="meta">{{ e.sub }}</span>{% if e.late %}<span class="badge sla-late">En retard</span>{% endif %}</div>
+{% else %}<p class="meta" style="margin:0">Rien de prévu ce jour-là.</p>{% endfor %}</div>{% endif %}
+<p class="meta">Les tickets sont placés à leur <b>échéance</b> (délai cible). Les jours fériés et non ouvrés se règlent dans Paramètres → Délais et horaires.</p>
+{% endblock %}

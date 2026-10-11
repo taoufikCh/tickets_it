@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}Mon compte{% endblock %}{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<h1>Mon compte</h1><p class="lead">&nbsp;</p>
+<form method="post" class="panel" data-allow="1"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="profile"><h2>Alertes</h2>
+{% if not smtp %}<p class="meta" style="margin-top:0">L'envoi d'emails n'est pas activé (un administrateur peut l'activer dans Paramètres). Les alertes à l'écran fonctionnent dans tous les cas.</p>{% endif %}
+<label for="email" style="margin-top:0">Mon email</label><input id="email" type="email" name="email" value="{{ g.user['email'] }}">
+<label class="inline"><input type="checkbox" name="notify" value="1" {{ 'checked' if g.user['notify'] }}> Recevoir un email à chaque nouveau ticket</label>
+<label class="inline"><input type="checkbox" name="digest" value="1" {{ 'checked' if g.user['digest'] }}> Recevoir le résumé quotidien <small>(si un administrateur l'a activé)</small></label>
+<p style="margin:16px 0 0"><button class="btn sm">Enregistrer</button></p></form>
+<form method="post" class="panel" data-allow="1"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="password"><h2>Changer mon mot de passe</h2>
+<label for="old" style="margin-top:0">Mot de passe actuel</label><input id="old" type="password" name="old" required>
+<label for="new">Nouveau mot de passe</label><input id="new" type="password" name="new" minlength="6" required>
+<label for="confirm">Confirmer le nouveau mot de passe</label><input id="confirm" type="password" name="confirm" minlength="6" required>
+<p style="margin:16px 0 0"><button class="btn sm">Changer le mot de passe</button></p></form>
+{% endblock %}

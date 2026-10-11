@@ -1,0 +1,11 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Pièces jointes</h2>
+<div class="row"><div><label for="max_mo" style="margin-top:0">Taille maximale par fichier <small>(Mo)</small></label><input id="max_mo" name="max_mo" inputmode="numeric" value="{{ mo }}"></div>
+<div><label for="max_files" style="margin-top:0">Nombre maximal de fichiers par envoi</label><input id="max_files" name="max_files" inputmode="numeric" value="{{ nb }}"></div></div>
+<fieldset style="border:0;padding:0;margin:18px 0 0"><legend style="font-weight:600;padding:0">Types de fichiers autorisés</legend>
+{% for group, lst in catalogue %}<p class="meta" style="margin:12px 0 0"><b>{{ group }}</b></p>
+<div style="display:flex;flex-wrap:wrap">{% for e in lst %}<label class="inline" style="margin:4px 18px 0 0"><input type="checkbox" name="ext_{{ e }}" value="1" {{ 'checked' if e in exts }}> .{{ e }}</label>{% endfor %}</div>{% endfor %}</fieldset>
+<p class="meta" style="margin-top:14px">Pour votre sécurité, les exécutables, scripts, pages web et fichiers SVG ne peuvent jamais être autorisés. Les fichiers déjà envoyés restent accessibles même si leur type est retiré de la liste. Si un serveur web intermédiaire (Nginx, IIS…) est utilisé, sa propre limite d'envoi doit être au moins aussi grande.</p>
+<p style="margin:16px 0 0"><button class="btn">Enregistrer</button></p></form>
+{% endblock %}

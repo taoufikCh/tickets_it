@@ -1,0 +1,28 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" enctype="multipart/form-data" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Identité de l'application</h2>
+<label for="app_name" style="margin-top:0">Nom affiché</label><input id="app_name" name="app_name" maxlength="60" value="{{ cfg['app_name'] }}" required>
+<p class="meta" style="margin:4px 0 0">Visible dans le menu, l'onglet du navigateur et les pages publiques.</p>
+<label for="brand">Couleur principale</label>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+ <input type="color" id="brand_picker" value="{{ cfg['brand'] }}" style="width:56px;height:40px;padding:2px" aria-label="Sélecteur de couleur">
+ <input id="brand" name="brand" value="{{ cfg['brand'] }}" maxlength="7" style="max-width:130px" aria-describedby="brandhelp">
+ <span class="btn sm" id="brand_prev" style="pointer-events:none;background:{{ cfg['brand'] }}">Aperçu</span></div>
+<p class="meta" id="brandhelp" style="margin:4px 0 0">Boutons, liens et élément actif du menu. Elle doit rester assez foncée pour que le texte blanc reste lisible.</p>
+<label for="logo">Logo <small>(PNG, JPEG, GIF ou WebP, 512 Ko maximum)</small></label>
+{% if cfg['logo'] %}<div style="margin:6px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+ <img src="{{ url_for('logo', v=cfg['logo']) }}" alt="Logo actuel" style="max-height:60px;max-width:240px;background:#1b2430;padding:8px;border-radius:6px">
+ <label class="inline" style="margin:0"><input type="checkbox" name="remove_logo" value="1"> Supprimer le logo</label></div>{% endif %}
+<input id="logo" type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+<label for="welcome">Message d'accueil <small>(affiché en haut du formulaire de demande, facultatif)</small></label>
+<textarea id="welcome" name="welcome" maxlength="600" placeholder="Ex. : en cas d'urgence, appelez le poste 1234.">{{ cfg['welcome'] }}</textarea>
+<label class="inline" style="margin-top:18px"><input type="checkbox" name="reset" value="1"> Rétablir l'apparence par défaut (nom, couleur, message, logo)</label>
+<p style="margin:16px 0 0"><button class="btn">Enregistrer</button></p></form>
+<script>
+(function(){
+  var p=document.getElementById('brand_picker'),t=document.getElementById('brand'),v=document.getElementById('brand_prev');
+  p.addEventListener('input',function(){t.value=p.value;v.style.background=p.value;});
+  t.addEventListener('input',function(){if(/^#[0-9a-fA-F]{6}$/.test(t.value)){p.value=t.value;v.style.background=t.value;}});
+})();
+</script>
+{% endblock %}

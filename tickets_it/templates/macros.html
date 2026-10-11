@@ -1,0 +1,20 @@
+{% macro ico(name) %}<svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if name=='tickets' %}<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+{% elif name=='projets' %}<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+{% elif name=='taches' %}<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+{% elif name=='calendrier' %}<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+{% elif name=='stats' %}<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+{% elif name=='recurrents' %}<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+{% elif name=='reponses' %}<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+{% elif name=='users' %}<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+{% elif name=='settings' %}<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+{% elif name=='backup' %}<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+{% elif name=='plus' %}<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+{% elif name=='user' %}<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+{% endif %}</svg>{% endmacro %}
+{% macro origine(x) %}{% if x['channel'] %}{{ x['channel'] }}{% if x['creator'] %} · saisi par {{ x['creator'] }}{% endif %}{% elif x['source']=='planifie' %}Ticket récurrent{% elif x['source']=='ticket' %}Issu d'un ticket{% elif x['source']=='tech' %}Saisi par un technicien{% else %}Formulaire en ligne{% endif %}{% endmacro %}
+{% macro files(list, token=None, proj=False) %}{% if list %}<div class="files">
+{% for a in list %}{% if proj %}{% set url = url_for('projet_suivi_fichier', token=token, aid=a['id']) if token else url_for('admin_projet_fichier', aid=a['id']) %}{% else %}{% set url = url_for('suivi_fichier', token=token, aid=a['id']) if token else url_for('admin_fichier', aid=a['id']) %}{% endif %}
+{% if a['filename'].rsplit('.',1)[-1]|lower in ['png','jpg','jpeg','gif','webp','bmp'] %}<a href="{{ url }}?inline=1" target="_blank" rel="noopener"><img src="{{ url }}?inline=1" alt="{{ a['filename'] }}" loading="lazy"></a>
+{% else %}<a class="file" href="{{ url }}">{{ a['filename'] }} <span class="meta">({{ a['size']|fsize }})</span></a>{% endif %}
+{% endfor %}</div>{% endif %}{% endmacro %}

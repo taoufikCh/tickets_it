@@ -1,0 +1,51 @@
+{% extends 'admin_settings/base.html' %}
+{% macro catrow(r) %}<tr>
+ <td class="mv"><button type="button" class="x" data-move="up" aria-label="Monter">&#8593;</button><button type="button" class="x" data-move="down" aria-label="Descendre">&#8595;</button></td>
+ <td><input name="cat_name_{{ r.i }}" value="{{ r.name }}" maxlength="60" aria-label="Nom de la catégorie"><input type="hidden" name="cat_orig_{{ r.i }}" value="{{ r.orig }}"></td>
+ <td class="c"><input type="checkbox" name="cat_active_{{ r.i }}" value="1" {{ 'checked' if r.active }} aria-label="Catégorie active"></td>
+ <td class="c meta">{{ r.used }}</td>
+ <td class="c"><input type="checkbox" name="cat_del_{{ r.i }}" value="1" aria-label="Supprimer la catégorie"></td></tr>{% endmacro %}
+{% macro prirow(r) %}<tr>
+ <td class="mv"><button type="button" class="x" data-move="up" aria-label="Monter">&#8593;</button><button type="button" class="x" data-move="down" aria-label="Descendre">&#8595;</button></td>
+ <td><input name="pri_name_{{ r.i }}" value="{{ r.name }}" maxlength="30" aria-label="Nom de la priorité"><input type="hidden" name="pri_orig_{{ r.i }}" value="{{ r.orig }}"></td>
+ <td class="c meta">{{ r.used }}</td>
+ <td class="c"><input type="checkbox" name="pri_del_{{ r.i }}" value="1" aria-label="Supprimer la priorité"></td></tr>{% endmacro %}
+{% block section %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Catégories de tickets</h2>
+<p class="meta" style="margin-top:-4px">Proposées dans le formulaire de demande. <b>Renommer</b> met à jour les tickets existants. <b>Décocher « Active »</b> masque la catégorie du formulaire sans toucher aux anciens tickets. La suppression n'est possible que si la catégorie n'est plus utilisée.</p>
+<div class="tablewrap"><table class="edit"><thead><tr><th>Ordre</th><th>Nom</th><th class="c">Active</th><th class="c">Utilisée</th><th class="c">Supprimer</th></tr></thead>
+<tbody id="cat-body" data-next="{{ cat_next }}">{% for r in cats %}{{ catrow(r) }}{% endfor %}</tbody></table></div>
+<p style="margin:10px 0 0"><button type="button" class="btn sec sm" data-add="cat-body" data-tpl="cat-tpl">Ajouter une catégorie</button></p>
+<template id="cat-tpl">{{ catrow({'i':'__I__','name':'','orig':'','active':True,'used':0}) }}</template>
+
+<h2 style="margin-top:28px">Priorités</h2>
+<p class="meta" style="margin-top:-4px">Classées de la <b>moins urgente (en haut)</b> à la <b>plus urgente (en bas)</b>. Les délais cibles de chaque priorité se règlent dans l'onglet « Délais et horaires ».</p>
+<div class="tablewrap"><table class="edit"><thead><tr><th>Ordre</th><th>Nom</th><th class="c">Tickets</th><th class="c">Supprimer</th></tr></thead>
+<tbody id="pri-body" data-next="{{ pri_next }}">{% for r in pris %}{{ prirow(r) }}{% endfor %}</tbody></table></div>
+<p style="margin:10px 0 0"><button type="button" class="btn sec sm" data-add="pri-body" data-tpl="pri-tpl">Ajouter une priorité</button></p>
+<template id="pri-tpl">{{ prirow({'i':'__I__','name':'','orig':'','used':0}) }}</template>
+
+<h2 style="margin-top:28px">Services</h2>
+<label for="services" style="margin-top:0">Un service par ligne <small>(liste déroulante dans le formulaire de demande ; laissez vide pour un champ libre)</small></label>
+<textarea id="services" name="services" placeholder="Comptabilité&#10;Ressources humaines&#10;Direction">{{ services }}</textarea>
+<h2 style="margin-top:28px">Bureaux et postes</h2>
+<label for="bureaux" style="margin-top:0">Un lieu par ligne <small>(suggestions dans le formulaire ; la saisie libre reste possible)</small></label>
+<textarea id="bureaux" name="bureaux" placeholder="Bureau 101&#10;Bureau 102&#10;Salle de réunion">{{ bureaux }}</textarea>
+<h2 style="margin-top:28px">Sources de la demande</h2>
+<label for="canaux" style="margin-top:0">Une source par ligne <small>(proposées au technicien qui saisit une demande à la place de quelqu'un : téléphone, email, sur place…)</small></label>
+<textarea id="canaux" name="canaux" placeholder="Téléphone&#10;Email&#10;Sur place / verbalement">{{ canaux }}</textarea>
+<p style="margin:20px 0 0"><button class="btn">Enregistrer les listes</button></p></form>
+<script>
+(function(){
+  document.querySelectorAll('[data-add]').forEach(function(b){b.onclick=function(){
+    var tb=document.getElementById(b.dataset.add),t=document.getElementById(b.dataset.tpl),i=parseInt(tb.dataset.next,10);
+    tb.dataset.next=i+1;var tr=document.createElement('tbody');tr.innerHTML=t.innerHTML.replace(/__I__/g,i);
+    var row=tr.querySelector('tr');tb.appendChild(row);var inp=row.querySelector('input[type=text],input:not([type])');if(inp)inp.focus();};});
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-move]');if(!b)return;
+    var tr=b.closest('tr'),o=b.dataset.move==='up'?tr.previousElementSibling:tr.nextElementSibling;if(!o)return;
+    if(b.dataset.move==='up')tr.parentNode.insertBefore(tr,o);else tr.parentNode.insertBefore(o,tr);b.focus();});
+})();
+</script>
+{% endblock %}

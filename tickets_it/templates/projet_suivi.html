@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% from 'macros.html' import files with context %}
+{% block title %}Projet #{{ p['id'] }}{% endblock %}{% block mainclass %}narrow{% endblock %}
+{% block content %}
+{% set d = due_badge(p['due_date'], p['status'] in ['Terminé','Annulé']) %}
+{% if created %}<div class="flash ok">Votre demande de projet est enregistrée sous le numéro <b>#{{ p['id'] }}</b>. Un technicien l'étudiera et vous répondra. Conservez cette page : c'est votre lien de suivi.</div>{% endif %}
+<h1>#{{ p['id'] }} · {{ p['title'] }}</h1>
+<p class="lead"><span class="badge s-{{ p['status']|slug }}">{{ 'En attente de validation' if p['status']=='Proposé' else p['status'] }}</span>
+ &nbsp;demandé le {{ p['created_at']|dt }}{% if p['owner'] %} · responsable : {{ p['owner'] }}{% endif %}</p>
+<div class="panel"><h2>Votre demande</h2><div class="desc">{{ p['description'] }}</div>
+{% if p['wanted_date'] %}<p class="meta" style="margin:10px 0 0">Date souhaitée : {{ p['wanted_date'][8:10] }}/{{ p['wanted_date'][5:7] }}/{{ p['wanted_date'][:4] }}</p>{% endif %}
+{{ files(atts.get(0), p['token'], True) }}</div>
+{% if total or d[1] %}<div class="panel"><h2>Avancement</h2>
+{% if total %}<div class="bar" style="margin-bottom:6px"><i style="width:{{ (100*done/total)|round|int }}%"></i></div><p class="meta" style="margin:0">{{ done }} étape{{ 's' if done>1 }} terminée{{ 's' if done>1 }} sur {{ total }}</p>{% endif %}
+{% if d[1] %}<p style="margin:10px 0 0"><span class="badge sla-{{ d[0] or 'ok' }}">Échéance prévue : {{ p['due_date'][8:10] }}/{{ p['due_date'][5:7] }}/{{ p['due_date'][:4] }}</span></p>{% endif %}</div>{% endif %}
+<div class="panel"><h2>Échanges</h2>
+{% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }}"><div class="who">{{ c['author'] }}{% if c['is_staff'] %} (service informatique){% endif %} · {{ c['created_at']|dt }}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id']), p['token'], True) }}</div>
+{% else %}<p class="meta">Aucun message pour l'instant.</p>{% endfor %}
+{% if p['status'] != 'Annulé' %}
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<label for="body">Ajouter une précision ou poser une question</label><textarea id="body" name="body"></textarea>
+<label for="files">Joindre un fichier <small>(cahier des charges, maquette…)</small></label><input id="files" type="file" name="files" multiple accept="{{ upload_accept }}">
+<p><button class="btn sm">Envoyer</button></p></form>
+{% else %}<p class="meta">Cette demande est clôturée. Pour une nouvelle demande, utilisez le formulaire d'accueil.</p>{% endif %}
+</div>
+{% endblock %}

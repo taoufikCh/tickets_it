@@ -1,0 +1,71 @@
+{% extends 'base.html' %}{% from 'macros.html' import files, origine with context %}
+{% block title %}Ticket #{{ t['id'] }}{% endblock %}
+{% block content %}
+{% set s = sla(t) %}
+<p class="meta" style="margin:0 0 6px"><a href="{{ url_for('admin') }}">← Tous les tickets</a></p>
+<h1>#{{ t['id'] }} · {{ t['title'] }}</h1>
+<p class="lead"><span class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span> <span class="badge {{ prio_cls(t['priority']) }}">{{ t['priority'] }}</span>
+ <span class="badge sla-{{ s[0] }}">{{ s[1] }}</span> &nbsp;ouvert le {{ t['created_at']|dt }}</p>
+<div class="layout"><div>
+ <div class="panel"><h2>Description</h2><div class="desc">{{ t['description'] }}</div>{{ files(atts.get(0)) }}</div>
+ <div class="panel"><h2>Historique</h2>
+ {% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }} {{ 'internal' if c['internal'] }}">
+  <div class="who">{{ c['author'] }} · {{ c['created_at']|dt }}{% if c['internal'] %} · note interne (invisible du demandeur){% endif %}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id'])) }}</div>
+ {% else %}<p class="meta">Aucun message.</p>{% endfor %}
+ <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="comment">
+  <label for="body">Répondre ou ajouter une note</label>
+  <select id="tpl" aria-label="Insérer une réponse type" style="margin-bottom:8px"><option value="">Insérer une réponse type…</option>{% for id, r in replies.items() %}<option value="{{ id }}">{{ r['title'] }}</option>{% endfor %}</select>
+  <textarea id="body" name="body"></textarea>
+  <label for="files">Joindre un fichier <small>(facultatif)</small></label><input id="files" type="file" name="files" multiple accept="{{ upload_accept }}">
+  <label class="inline"><input type="checkbox" name="internal" value="1"> Note interne (ne pas montrer au demandeur)</label>
+  <p><button class="btn sm">Ajouter</button></p></form>
+ </div></div>
+ <aside>
+  <form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="update">
+   <h2>Traitement</h2>
+   <label for="status" style="margin-top:0">Statut</label><select id="status" name="status">{% for s2 in statuts %}<option {{ 'selected' if t['status']==s2 }}>{{ s2 }}</option>{% endfor %}</select>
+   <label for="priority">Priorité</label><select id="priority" name="priority">{% for p in priorites %}<option {{ 'selected' if t['priority']==p }}>{{ p }}</option>{% endfor %}</select>
+   <label for="category">Catégorie</label><select id="category" name="category">{% for c in categories %}<option {{ 'selected' if t['category']==c }}>{{ c }}</option>{% endfor %}</select>
+   <label for="assignee">Technicien</label><select id="assignee" name="assignee"><option value="">Non assigné</option>{% for u in techs %}<option value="{{ u['id'] }}" {{ 'selected' if t['assignee_id']==u['id'] }}>{{ u['name'] }}</option>{% endfor %}</select>
+   <p class="meta" style="margin:10px 0 0">« En attente » met le délai en pause (attente d'un retour du demandeur).</p>
+   <p style="margin:12px 0 0"><button class="btn sm">Enregistrer</button></p>
+  </form>
+  {% if t['assignee_id'] != g.user['id'] %}<form method="post" style="margin:-6px 0 18px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="take"><button class="btn sec sm" style="width:100%">Prendre ce ticket</button></form>{% endif %}
+  <div class="panel"><h2>Délai</h2><dl class="kv">
+   <dt>Objectif</dt><dd>{{ sla_heures.get(t['priority'], 24)|num }} h ouvrées</dd>
+   <dt>Échéance</dt><dd>{{ t['due_at']|dt }}</dd>
+   {% if t['closed_at'] %}<dt>Résolu le</dt><dd>{{ t['closed_at']|dt }}</dd>{% endif %}
+  </dl></div>
+  {% if glpi_on or t['glpi_id'] %}<div class="panel"><h2>GLPI</h2>
+   {% if t['glpi_id'] %}<p style="margin:0">Envoyé vers GLPI : {% if glpi_link %}<a href="{{ glpi_link }}" target="_blank" rel="noopener">ticket GLPI n° {{ t['glpi_id'] }}</a>{% else %}ticket GLPI n° {{ t['glpi_id'] }}{% endif %}</p>
+    <p class="meta" style="margin:6px 0 0">Le {{ t['glpi_sent_at']|dt }}. Les modifications faites ensuite ici ne sont pas renvoyées vers GLPI.</p>
+   {% else %}
+    {% if t['glpi_error'] %}<div class="flash error" role="alert" style="margin:0 0 10px">Dernier essai échoué : {{ t['glpi_error'] }}</div>{% endif %}
+    <form method="post" onsubmit="if(!confirm('Envoyer ce ticket vers GLPI ? Un ticket sera créé dans GLPI.'))return false;var b=this.querySelector('button');b.disabled=true;b.textContent='Envoi en cours…';"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="glpi_send">
+     <button class="btn sec sm" style="width:100%">{{ 'Réessayer l\'envoi vers GLPI' if t['glpi_error'] else 'Envoyer vers GLPI' }}</button></form>
+   {% endif %}</div>{% endif %}
+  <div class="panel"><h2>Projet</h2>
+   {% if proj %}<p style="margin:0 0 10px"><a href="{{ url_for('project_detail', pid=proj['id']) }}">#{{ proj['id'] }} · {{ proj['title'] }}</a> <span class="badge s-{{ proj['status']|slug }}">{{ proj['status'] }}</span></p>{% endif %}
+   <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="link_project">
+    <select name="project_id" aria-label="Projet lié à ce ticket"><option value="">Aucun projet lié</option>{% for p in projects %}<option value="{{ p['id'] }}" {{ 'selected' if t['project_id']==p['id'] }}>#{{ p['id'] }} · {{ p['title'] }}</option>{% endfor %}</select>
+    <p style="margin:8px 0 0"><button class="btn sec sm">Enregistrer le lien</button></p></form>
+   {% if not proj %}<form method="post" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="to_project">
+    <button class="btn sec sm" style="width:100%" onclick="return confirm('Créer un projet à partir de ce ticket et marquer le ticket comme résolu ?')">Transformer en projet</button></form>{% endif %}</div>
+  <div class="panel"><h2>Demandeur</h2><dl class="kv">
+   <dt>Origine</dt><dd>{{ origine(t) }}</dd>
+   <dt>Nom</dt><dd>{{ t['requester_name'] }}</dd>
+   {% if t['requester_email'] %}<dt>Email</dt><dd><a href="mailto:{{ t['requester_email'] }}">{{ t['requester_email'] }}</a></dd>{% endif %}
+   {% if t['department'] %}<dt>Service</dt><dd>{{ t['department'] }}</dd>{% endif %}
+   {% if t['location'] %}<dt>Lieu</dt><dd>{{ t['location'] }}</dd>{% endif %}
+  </dl><p class="meta" style="margin:12px 0 4px">Lien de suivi du demandeur :</p><div class="link">{{ link }}</div></div>
+ </aside></div>
+<script>
+(function(){
+  var R={{ replies|tojson }}, sel=document.getElementById('tpl'), ta=document.getElementById('body');
+  sel.onchange=function(){
+    var r=R[sel.value]; if(!r)return;
+    ta.value=(ta.value?ta.value+"\n\n":"")+r.body; sel.value=''; ta.focus();
+  };
+})();
+</script>
+{% endblock %}

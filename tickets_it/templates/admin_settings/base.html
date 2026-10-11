@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}Paramètres{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Paramètres</h1><p class="lead">Réglages de l'application, modifiables sans toucher au code ni redémarrer le serveur.</p>
+<nav class="tabs" aria-label="Sections des paramètres">{% for k, label in tabs %}<a href="{{ url_for('settings_page', section=k) }}" class="{{ 'on' if k==section }}"{% if k==section %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+{% block section %}{% endblock %}
+{% endblock %}

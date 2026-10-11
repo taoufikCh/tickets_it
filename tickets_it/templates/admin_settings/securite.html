@@ -1,0 +1,15 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Session</h2>
+<label for="session_hours" style="margin-top:0">Déconnexion automatique après inactivité <small>(heures ; 0 = jusqu'à la fermeture du navigateur)</small></label>
+<input id="session_hours" name="session_hours" inputmode="numeric" value="{{ v.session_hours }}" style="max-width:160px">
+<h2 style="margin-top:26px">Protection contre les essais de mots de passe</h2>
+<div class="row"><div><label for="lock_attempts" style="margin-top:0">Verrouiller le compte après <small>(essais échoués ; 0 = jamais)</small></label><input id="lock_attempts" name="lock_attempts" inputmode="numeric" value="{{ v.lock_attempts }}"></div>
+<div><label for="lock_minutes" style="margin-top:0">Pendant <small>(minutes)</small></label><input id="lock_minutes" name="lock_minutes" inputmode="numeric" value="{{ v.lock_minutes }}"></div></div>
+<p class="meta" style="margin:6px 0 0">Un administrateur peut déverrouiller un compte à tout moment depuis la page « Techniciens ».</p>
+<h2 style="margin-top:26px">Mots de passe</h2>
+<label for="pw_min" style="margin-top:0">Longueur minimale <small>(caractères)</small></label><input id="pw_min" name="pw_min" inputmode="numeric" value="{{ v.pw_min }}" style="max-width:160px">
+<label class="inline"><input type="checkbox" name="pw_mix" value="1" {{ 'checked' if mix }}> Exiger des lettres et des chiffres</label>
+<p class="meta" style="margin:6px 0 0">S'applique à la création de comptes et aux changements de mot de passe ; les mots de passe existants ne sont pas modifiés.</p>
+<p style="margin:20px 0 0"><button class="btn">Enregistrer</button></p></form>
+{% endblock %}

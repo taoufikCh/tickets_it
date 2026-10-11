@@ -1,0 +1,46 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" class="panel" autocomplete="off"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Email (SMTP)</h2>
+ {% if cfg['email_enabled']=='1' and cfg['smtp_host'] %}<span class="badge sla-ok">Emails activés</span>{% else %}<span class="badge s-clos">Emails désactivés</span>{% endif %}</div>
+<p class="meta" style="margin:6px 0 0">Permet d'envoyer la confirmation au demandeur, ses notifications de suivi et les alertes aux techniciens. Les alertes à l'écran fonctionnent dans tous les cas.</p>
+<label class="inline" style="margin-top:16px"><input type="checkbox" name="email_enabled" value="1" {{ 'checked' if cfg['email_enabled']=='1' }}> <b>Activer l'envoi d'emails</b></label>
+<div class="row">
+ <div><label for="smtp_host">Serveur SMTP</label><input id="smtp_host" name="smtp_host" value="{{ cfg['smtp_host'] }}" placeholder="smtp.entreprise.local ou 192.168.1.10"></div>
+ <div><label for="smtp_port">Port</label><input id="smtp_port" name="smtp_port" inputmode="numeric" value="{{ cfg['smtp_port'] }}"></div>
+</div>
+<div class="row">
+ <div><label for="smtp_security">Sécurité de la connexion</label><select id="smtp_security" name="smtp_security">{% for k, v in securites.items() %}<option value="{{ k }}" {{ 'selected' if cfg['smtp_security']==k }}>{{ v }}</option>{% endfor %}</select></div>
+ <div><label for="smtp_from">Adresse d'expédition</label><input id="smtp_from" name="smtp_from" value="{{ cfg['smtp_from'] }}" placeholder="support-it@entreprise.local"></div>
+</div>
+<div class="row">
+ <div><label for="smtp_user">Identifiant <small>(vide si le serveur n'en demande pas)</small></label><input id="smtp_user" name="smtp_user" value="{{ cfg['smtp_user'] }}" autocomplete="off"></div>
+ <div><label for="smtp_password">Mot de passe {% if cfg['smtp_password'] %}<small>(un mot de passe est enregistré : laissez vide pour le conserver)</small>{% endif %}</label>
+  <input id="smtp_password" name="smtp_password" type="password" autocomplete="new-password" placeholder="{{ '••••••••' if cfg['smtp_password'] }}">
+  {% if cfg['smtp_password'] %}<label class="inline" style="margin-top:6px"><input type="checkbox" name="clear_password" value="1"> Supprimer le mot de passe enregistré</label>{% endif %}</div>
+</div>
+<label class="inline"><input type="checkbox" name="smtp_verify" value="1" {{ 'checked' if cfg['smtp_verify']=='1' }}> <span>Vérifier le certificat du serveur <small>(à décocher pour un serveur interne avec certificat auto-signé)</small></span></label>
+<label for="app_url">Adresse de l'application <small>(utilisée dans les liens des emails)</small></label>
+<input id="app_url" name="app_url" value="{{ cfg['app_url'] }}" placeholder="http://srv-tickets:5000">
+<p class="meta" style="margin:4px 0 0">Si vide, l'adresse utilisée par la personne qui a déclenché l'envoi est reprise.</p>
+<h2 style="margin-top:22px">Quels emails envoyer ?</h2>
+<label class="inline" style="margin-top:0"><input type="checkbox" name="mail_requesters" value="1" {{ 'checked' if cfg['mail_requesters']=='1' }}> <span>Confirmations et suivi aux demandeurs <small>(réception, changement de statut, réponses)</small></span></label>
+<label class="inline"><input type="checkbox" name="mail_staff" value="1" {{ 'checked' if cfg['mail_staff']=='1' }}> <span>Alertes aux techniciens <small>(nouveau ticket, nouvelle demande de projet ; chaque technicien règle son adresse dans « Mon compte »)</small></span></label>
+<p style="margin:20px 0 0"><button class="btn" name="action" value="save">Enregistrer</button></p>
+<hr style="border:0;border-top:1px solid var(--line);margin:22px 0 4px">
+<h2 style="margin-top:16px">Tester la configuration</h2>
+<p class="meta" style="margin:0">Envoie un message avec les valeurs ci-dessus, <b>sans les enregistrer</b>. En cas d'échec, la cause est affichée.</p>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:6px">
+ <div><label for="test_to" style="margin-top:0">Envoyer un email de test à</label><input id="test_to" name="test_to" type="email" value="{{ test_to }}" placeholder="votre.adresse@entreprise.local"></div>
+ <div><button class="btn sec" name="action" value="test">Envoyer un test</button></div></div>
+</form>
+<p class="meta">Le mot de passe SMTP est stocké en clair dans la base de données (et donc dans ses sauvegardes), car l'application doit le renvoyer au serveur : utilisez de préférence un compte email dédié aux notifications, avec des droits limités à l'envoi.</p>
+<script>
+(function(){
+  var sec=document.getElementById('smtp_security'), port=document.getElementById('smtp_port'), std={none:'25',starttls:'587',ssl:'465'};
+  sec.addEventListener('change',function(){
+    var cur=port.value.trim();
+    if(cur===''||cur==='25'||cur==='587'||cur==='465')port.value=std[sec.value];
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<h1>Signaler un problème</h1>
+<p class="lead">Décrivez votre demande : un technicien la prendra en charge. Vous recevrez un lien pour suivre son avancement.</p>
+{% if welcome %}<div class="panel" style="white-space:pre-wrap;border-left:4px solid var(--brand)">{{ welcome }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="panel">
+<input type="hidden" name="csrf" value="{{ csrf_token() }}">
+{% if g.user and g.user['role'] != 'lecteur' %}<div class="panel" style="background:#f3f8fb;border-color:#bcd8e4;margin-bottom:14px">
+ <label for="channel" style="margin-top:0">Source de la demande * <small>(comment vous est-elle parvenue ? visible seulement par les techniciens)</small></label>
+ <select id="channel" name="channel" required><option value="">— Choisir —</option>{% for c in channels %}<option {{ 'selected' if form.get('channel')==c }}>{{ c }}</option>{% endfor %}</select>
+ <p class="meta" style="margin:6px 0 0">Vous saisissez cette demande pour quelqu'un : indiquez son nom et son email ci-dessous, il recevra le lien de suivi.</p></div>{% endif %}
+<fieldset style="border:0;padding:0;margin:0 0 4px"><legend style="font-weight:600;padding:0">Nature de votre demande</legend>
+ <label class="inline"><input type="radio" name="kind" value="ticket" {{ 'checked' if form.get('kind')!='projet' }}> <span>Un problème ou une demande de dépannage <small>(imprimante, réseau, logiciel…)</small></span></label>
+ <label class="inline"><input type="radio" name="kind" value="projet" {{ 'checked' if form.get('kind')=='projet' }}> <span>Un projet ou un nouveau besoin <small>(page sur le site web, cahier des charges, évolution…)</small></span></label>
+</fieldset>
+<div class="row">
+ <div><label for="name">Votre nom *</label><input id="name" name="name" value="{{ form.get('name','') }}" required></div>
+ <div><label for="email">Email <small>(pour être prévenu des avancées)</small></label><input id="email" type="email" name="email" value="{{ form.get('email','') }}"></div>
+</div>
+<div class="row">
+ <div><label for="department">Service</label>{% if services %}<select id="department" name="department"><option value="">— Choisir —</option>{% for s in services %}<option{{ ' selected' if form.get('department')==s }}>{{ s }}</option>{% endfor %}</select>{% else %}<input id="department" name="department" value="{{ form.get('department','') }}">{% endif %}</div>
+ <div class="only-ticket"><label for="location">Bureau / poste <small>(ex : B204, étage 2)</small></label><input id="location" name="location" value="{{ form.get('location','') }}"{% if bureaux %} list="bureaux"{% endif %}>{% if bureaux %}<datalist id="bureaux">{% for b in bureaux %}<option value="{{ b }}">{% endfor %}</datalist>{% endif %}</div>
+ <div class="only-projet"><label for="wanted">Date souhaitée <small>(facultatif)</small></label><input id="wanted" type="date" name="wanted" value="{{ form.get('wanted','') }}"></div>
+</div>
+<div class="row only-ticket">
+ <div><label for="category">Type de problème *</label>
+  <select id="category" name="category">{% for c in categories %}<option {{ 'selected' if form.get('category')==c }}>{{ c }}</option>{% endfor %}</select></div>
+ <div><label for="priority">Urgence</label>
+  <select id="priority" name="priority">{% for p in priorites %}<option {{ 'selected' if (form.get('priority') or prio_default)==p }}>{{ p }}</option>{% endfor %}</select></div>
+</div>
+<label for="description">Détails *</label>
+<textarea id="description" name="description" placeholder="Ticket : décrivez le problème en commençant par une phrase claire (ex. : L'imprimante du 2e étage n'imprime plus). Que s'est-il passé ? Message d'erreur affiché ? Depuis quand ? Projet : objectif, contexte, résultat attendu." required>{{ form.get('description','') }}</textarea>
+<label for="files">Captures d'écran ou documents <small>({{ max_files }} fichiers max, {{ max_mo }} Mo chacun)</small></label>
+<input id="files" type="file" name="files" multiple accept="{{ upload_accept }}">
+<p style="margin:18px 0 0"><button class="btn">Envoyer la demande</button></p>
+</form>
+<script>
+(function(){
+  var radios=document.querySelectorAll('input[name=kind]');
+  function sync(){
+    var projet=document.querySelector('input[name=kind]:checked').value==='projet';
+    document.querySelectorAll('.only-ticket').forEach(function(e){e.style.display=projet?'none':'';});
+    document.querySelectorAll('.only-projet').forEach(function(e){e.style.display=projet?'':'none';});
+  }
+  radios.forEach(function(r){r.addEventListener('change',sync);});sync();
+})();
+</script>
+{% endblock %}

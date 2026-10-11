@@ -1,0 +1,54 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+<form method="post" class="panel" autocomplete="off"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Liaison avec GLPI</h2>
+ {% if cfg['glpi_enabled']=='1' and cfg['glpi_app_token'] and cfg['glpi_user_token'] %}<span class="badge sla-ok">Envoi activé</span>{% else %}<span class="badge s-clos">Envoi désactivé</span>{% endif %}</div>
+<p class="meta" style="margin:6px 0 0">Permet d'envoyer un ticket vers GLPI (version 10) avec le bouton « Envoyer vers GLPI » de la fiche ticket. L'envoi se fait ticket par ticket, dans un seul sens : Tickets IT → GLPI.</p>
+
+<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:600">Préparer GLPI (à faire une seule fois)</summary>
+<ol class="meta" style="margin:8px 0 0;padding-left:20px;line-height:1.6">
+ <li>Dans GLPI : <b>Configuration → Générale → API</b> : activer l'API REST et la connexion avec un jeton externe.</li>
+ <li>Sur la même page, ouvrir le client API « full access from localhost » (créé par défaut) et copier son <b>jeton d'application</b>. Il autorise 127.0.0.1, adapté à GLPI et Tickets IT sur le même ordinateur.</li>
+ <li>Créer dans GLPI un compte dédié (par exemple <i>tickets-it</i>) avec un profil limité à la création de tickets. Dans ses préférences (« Clés d'accès distant »), générer le <b>jeton d'API</b> : c'est le jeton utilisateur.</li>
+ <li>Coller l'adresse de GLPI et les deux jetons ci-dessous, puis cliquer sur « Tester la connexion ».</li></ol></details>
+
+<label class="inline" style="margin-top:16px"><input type="checkbox" name="glpi_enabled" value="1" {{ 'checked' if cfg['glpi_enabled']=='1' }}> <b>Activer l'envoi vers GLPI</b></label>
+<label for="glpi_url">Adresse de GLPI <small>(celle que vous tapez dans le navigateur)</small></label>
+<input id="glpi_url" name="glpi_url" value="{{ cfg['glpi_url'] }}" placeholder="http://localhost/glpi">
+<div class="row">
+ <div><label for="glpi_app_token">Jeton d'application {% if cfg['glpi_app_token'] %}<small>(enregistré : laissez vide pour le conserver)</small>{% endif %}</label>
+  <input id="glpi_app_token" name="glpi_app_token" type="password" autocomplete="new-password" placeholder="{{ '••••••••' if cfg['glpi_app_token'] }}">
+  {% if cfg['glpi_app_token'] %}<label class="inline" style="margin-top:6px"><input type="checkbox" name="clear_app" value="1"> Supprimer le jeton enregistré</label>{% endif %}</div>
+ <div><label for="glpi_user_token">Jeton utilisateur (API) {% if cfg['glpi_user_token'] %}<small>(enregistré : laissez vide pour le conserver)</small>{% endif %}</label>
+  <input id="glpi_user_token" name="glpi_user_token" type="password" autocomplete="new-password" placeholder="{{ '••••••••' if cfg['glpi_user_token'] }}">
+  {% if cfg['glpi_user_token'] %}<label class="inline" style="margin-top:6px"><input type="checkbox" name="clear_user" value="1"> Supprimer le jeton enregistré</label>{% endif %}</div>
+</div>
+<label class="inline"><input type="checkbox" name="glpi_verify" value="1" {{ 'checked' if cfg['glpi_verify']=='1' }}> <span>Vérifier le certificat HTTPS <small>(sans effet pour une adresse en http://)</small></span></label>
+<p style="margin:14px 0 0"><button class="btn sec" name="action" value="test">Tester la connexion</button> <span class="meta">Utilise les valeurs ci-dessus, sans les enregistrer.</span></p>
+
+<h2 style="margin-top:26px">Contenu du ticket créé dans GLPI</h2>
+<div class="row">
+ <div><label for="glpi_type" style="margin-top:0">Type</label><select id="glpi_type" name="glpi_type">{% for k, v in types.items() %}<option value="{{ k }}" {{ 'selected' if cfg['glpi_type']==k }}>{{ v }}</option>{% endfor %}</select></div>
+ <div><label for="glpi_entity" style="margin-top:0">N° d'entité GLPI <small>(vide = entité du compte)</small></label><input id="glpi_entity" name="glpi_entity" inputmode="numeric" value="{{ cfg['glpi_entity'] }}"></div>
+ <div><label for="glpi_request_type" style="margin-top:0">N° de source de la demande <small>(facultatif)</small></label><input id="glpi_request_type" name="glpi_request_type" inputmode="numeric" value="{{ cfg['glpi_request_type'] }}"></div>
+</div>
+<p class="meta" style="margin:8px 0 0">Le titre, la description, le demandeur, le service, le lieu et le lien de suivi sont repris dans le ticket GLPI. Le demandeur est écrit dans la description : le ticket est créé au nom du compte GLPI ci-dessus.</p>
+
+<h2 style="margin-top:22px">Priorité → urgence GLPI</h2>
+<div class="tablewrap" style="max-width:520px"><table class="edit"><tbody>
+{% for p in prios %}<tr><td><input type="hidden" name="urg_name_{{ p.i }}" value="{{ p.name }}">{{ p.name }}</td>
+ <td><select name="urg_{{ p.i }}" aria-label="Urgence GLPI pour {{ p.name }}">{% for k, v in urgences.items() %}<option value="{{ k }}" {{ 'selected' if p.value==k }}>{{ v }}</option>{% endfor %}</select></td></tr>{% endfor %}
+</tbody></table></div>
+
+<h2 style="margin-top:22px">Catégorie → catégorie GLPI</h2>
+<p class="meta" style="margin:0 0 6px">Saisissez le <b>numéro</b> de la catégorie GLPI correspondante (vide = aucune catégorie). Le bouton « Tester la connexion » affiche la liste des numéros.</p>
+<div class="tablewrap" style="max-width:520px"><table class="edit"><tbody>
+{% for c in cats %}<tr><td><input type="hidden" name="cat_name_{{ c.i }}" value="{{ c.name }}">{{ c.name }}</td>
+ <td><input name="cat_{{ c.i }}" inputmode="numeric" value="{{ c.value }}" style="max-width:110px" aria-label="Numéro de catégorie GLPI pour {{ c.name }}"></td></tr>{% endfor %}
+</tbody></table></div>
+{% if found %}<details open style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Catégories trouvées dans GLPI ({{ found|length }})</summary>
+<div class="tablewrap" style="max-width:520px;margin-top:6px"><table class="edit"><thead><tr><th style="width:70px">N°</th><th>Catégorie</th></tr></thead><tbody>{% for id, name in found %}<tr><td>{{ id }}</td><td>{{ name }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
+
+<p style="margin:22px 0 0"><button class="btn" name="action" value="save">Enregistrer</button></p>
+</form>
+<p class="meta">Les jetons sont stockés en clair dans la base de données (et ses sauvegardes), comme le mot de passe SMTP : utilisez un compte GLPI dédié aux droits limités. {% if web %}Interface GLPI : <a href="{{ web }}" target="_blank" rel="noopener">{{ web }}</a>.{% endif %}</p>
+{% endblock %}

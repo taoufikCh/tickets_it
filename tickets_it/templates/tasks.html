@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block title %}Tâches{% endblock %}{% block mainclass %}mid{% endblock %}
+{% macro row(k, show_who) %}{% set kd = due_badge(k['due_date'], k['done']) %}
+<div class="taskrow">
+ <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="toggle_task"><input type="hidden" name="id" value="{{ k['id'] }}"><input type="hidden" name="next" value="{{ nxt }}">
+  <label class="inline" style="margin:0"><input type="checkbox" {{ 'checked' if k['done'] }} onchange="this.form.submit()"> <span class="{{ 'done' if k['done'] }}">{{ k['title'] }}</span></label></form>
+ <span class="meta">{% if k['ptitle'] %}<a href="{{ url_for('project_detail', pid=k['project_id']) }}">{{ k['ptitle'] }}</a>{% else %}Tâche personnelle{% endif %}{% if show_who %} · {{ k['assignee'] or 'non assignée' }}{% endif %}</span>
+ {% if kd[1] and not k['done'] %}<span class="badge sla-{{ kd[0] }}">{{ kd[1] }}</span>{% endif %}
+ <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete_task"><input type="hidden" name="id" value="{{ k['id'] }}"><input type="hidden" name="next" value="{{ nxt }}">
+  <button class="x" aria-label="Supprimer la tâche « {{ k['title'] }} »" onclick="return confirm('Supprimer cette tâche ?')">×</button></form>
+</div>
+{% if k['notes'] %}<div class="meta" style="margin:-4px 0 8px 26px;white-space:pre-wrap">{{ k['notes'] }}</div>{% endif %}{% endmacro %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<h1 style="margin:0">Tâches</h1>
+<div class="seg">{% for v, l in [('moi','Mes tâches'),('tous','Toutes'),('aucun','Non assignées')] %}<a href="?qui={{ v }}" class="{{ 'on' if qui==v and not fait }}">{{ l }}</a>{% endfor %}<a href="?qui={{ qui }}&fait=1" class="{{ 'on' if fait }}">Terminées</a></div></div>
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><input type="hidden" name="next" value="{{ nxt }}"><h2>Nouvelle tâche</h2>
+<div class="row"><div><label for="title" style="margin-top:0">Titre</label><input id="title" name="title" maxlength="200" placeholder="Ex. : renouveler les toners" required></div>
+<div><label for="due" style="margin-top:0">Échéance</label><input id="due" type="date" name="due"></div></div>
+<div class="row"><div><label for="assignee">Responsable</label><select id="assignee" name="assignee"><option value="">Non assignée</option>{% for u in techs %}<option value="{{ u['id'] }}" {{ 'selected' if u['id']==g.user['id'] }}>{{ u['name'] }}</option>{% endfor %}</select></div>
+<div><label for="project_id">Projet <small>(facultatif)</small></label><select id="project_id" name="project_id"><option value="">Aucun : tâche personnelle</option>{% for p in projects %}<option value="{{ p['id'] }}">{{ p['title'] }}</option>{% endfor %}</select></div></div>
+<label for="notes">Notes <small>(facultatif)</small></label><textarea id="notes" name="notes" style="min-height:60px"></textarea>
+<p style="margin:14px 0 0"><button class="btn sm">Ajouter la tâche</button></p></form>
+{% if total == 0 %}<div class="panel empty">{{ 'Aucune tâche terminée.' if fait else 'Aucune tâche ici. Ajoutez-en une ci-dessus.' }}</div>{% endif %}
+{% for title, items in sections %}{% if items %}<div class="panel"><h2 {% if title=='En retard' %}style="color:var(--err)"{% endif %}>{{ title }} <span class="meta">({{ items|length }})</span></h2>
+{% for k in items %}{{ row(k, qui != 'moi') }}{% endfor %}</div>{% endif %}{% endfor %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'admin_settings/base.html' %}{% block section %}
+{% if not email_on %}<div class="flash warn">L'envoi d'emails est <b>désactivé</b> : ces réglages ne prendront effet qu'après son activation dans l'onglet <a href="{{ url_for('settings_page') }}">Email</a>.</div>{% endif %}
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<h2>Résumé quotidien</h2>
+<label class="inline" style="margin-top:6px"><input type="checkbox" name="digest_on" value="1" {{ 'checked' if v['digest_on']=='1' }}> <span><b>Envoyer chaque jour ouvré un résumé par email</b> <small>à chaque personne qui a une adresse email et n'a pas désactivé l'option dans « Mon compte » : ses tickets et tâches en retard ou du jour, les tickets sans technicien, les demandes de projet à valider. Aucun email n'est envoyé s'il n'y a rien à signaler.</small></span></label>
+<label for="digest_hour">À partir de <small>(heure, 0 à 23)</small></label><input id="digest_hour" name="digest_hour" inputmode="numeric" value="{{ v['digest_hour'] }}" style="max-width:120px">
+<h2 style="margin-top:26px">Rappels d'échéance</h2>
+<p class="meta" style="margin-top:-4px">Envoyés une seule fois par ticket, au technicien assigné (ou à toute l'équipe si personne n'est assigné), uniquement pendant les heures ouvrées.</p>
+<label for="remind_soon" style="margin-top:6px">Prévenir quand l'échéance approche <small>(heures avant l'échéance ; 0 = désactivé)</small></label><input id="remind_soon" name="remind_soon" inputmode="decimal" value="{{ v['remind_soon'] }}" style="max-width:120px">
+<label class="inline"><input type="checkbox" name="remind_late" value="1" {{ 'checked' if v['remind_late']=='1' }}> Prévenir quand un ticket passe en retard</label>
+{% if not has_url %}<p class="meta" style="margin:10px 0 0">⚠ Renseignez l'<b>adresse de l'application</b> (onglet Email) pour que les liens de ces emails automatiques soient cliquables.</p>{% endif %}
+<h2 style="margin-top:26px">Signature</h2>
+<label for="mail_signature" style="margin-top:0">Signature des emails envoyés aux demandeurs <small>(variable <code>{signature}</code>)</small></label>
+<input id="mail_signature" name="mail_signature" maxlength="200" value="{{ v['mail_signature'] }}">
+<h2 style="margin-top:26px">Textes des emails</h2>
+<p class="meta" style="margin-top:-4px">Cliquez sur un message pour modifier son objet et son texte. Les mots entre accolades, par exemple <code>{nom}</code>, sont remplacés automatiquement.</p>
+{% for key, t in templates %}<details style="border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;background:#fafbfc">
+ <summary style="cursor:pointer"><b>{{ t.label }}</b> <span class="meta">· {{ 'au demandeur' if t.to=='demandeur' else 'aux techniciens' }}{% if t.custom %} · personnalisé{% endif %}</span></summary>
+ <label for="s_{{ key }}">Objet</label><input id="s_{{ key }}" name="tpl_{{ key }}_subject" value="{{ t.subject }}" maxlength="200">
+ <label for="b_{{ key }}">Texte</label><textarea id="b_{{ key }}" name="tpl_{{ key }}_body" style="min-height:150px">{{ t.body }}</textarea>
+ <p class="meta" style="margin:6px 0 0">Variables : {% for x in t.vars %}<code>{{ '{' ~ x ~ '}' }}</code>{{ ' ' }}{% endfor %}{% if t.to=='demandeur' %}<code>{signature}</code>{% endif %}</p>
+ <label class="inline"><input type="checkbox" name="tpl_{{ key }}_reset" value="1"> Rétablir le texte par défaut à l'enregistrement</label></details>{% endfor %}
+<p style="margin:20px 0 0;display:flex;gap:10px;flex-wrap:wrap"><button class="btn" name="action" value="save">Enregistrer</button>
+<button class="btn sec" name="action" value="test_digest" formnovalidate>M'envoyer mon résumé maintenant</button></p>
+<p class="meta" style="margin:8px 0 0">Le bouton d'envoi utilise les réglages déjà enregistrés et votre adresse (« Mon compte »).</p></form>
+{% endblock %}
