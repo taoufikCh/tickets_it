@@ -181,6 +181,7 @@ table.cal td.sel{outline:2px solid var(--brand);outline-offset:-2px}
 <header class="top"><div class="in">
  <a class="brand" href="{{ url_for('nouveau') }}">{% if logo_url %}<img class="logo" src="{{ logo_url }}" alt="">{% endif %}{{ app_name }}</a>
  <a href="{{ url_for('nouveau') }}">Nouvelle demande</a>
+ <a href="{{ url_for('mes_demandes') }}">Mes demandes</a>
  <a href="{{ url_for('login') }}">Espace technicien</a>
 </div></header>
 {% endif %}

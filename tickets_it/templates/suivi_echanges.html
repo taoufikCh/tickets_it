@@ -1,0 +1,3 @@
+{% from 'macros.html' import files with context %}
+{% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }}"><div class="who">{{ c['author'] }}{% if c['is_staff'] %} (service informatique){% endif %} · {{ c['created_at']|dt }}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id']), t['token']) }}</div>
+{% else %}<p class="meta">Aucun message pour l'instant.</p>{% endfor %}

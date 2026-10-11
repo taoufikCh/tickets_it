@@ -3,12 +3,11 @@
 {% block content %}
 {% if created %}<div class="flash ok">Votre demande est enregistrée sous le numéro <b>#{{ t['id'] }}</b>. Conservez cette page : c'est votre lien de suivi.</div>{% endif %}
 <h1>#{{ t['id'] }} · {{ t['title'] }}</h1>
-<p class="lead"><span class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span>
+<p class="lead"><span id="st" class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span>
  &nbsp;{{ t['category'] }} · ouvert le {{ t['created_at']|dt }}{% if t['assignee'] %} · pris en charge par {{ t['assignee'] }}{% endif %}</p>
 <div class="panel"><h2>Votre demande</h2><div class="desc">{{ t['description'] }}</div>{{ files(atts.get(0), t['token']) }}</div>
 <div class="panel"><h2>Échanges</h2>
-{% for c in comments %}<div class="comment {{ 'staff' if c['is_staff'] }}"><div class="who">{{ c['author'] }}{% if c['is_staff'] %} (service informatique){% endif %} · {{ c['created_at']|dt }}</div><p>{{ c['body'] }}</p>{{ files(atts.get(c['id']), t['token']) }}</div>
-{% else %}<p class="meta">Aucun message pour l'instant.</p>{% endfor %}
+<div id="thread" data-last="{{ comments[-1]['id'] if comments else 0 }}" data-status="{{ t['status'] }}" data-url="{{ url_for('suivi_messages', token=t['token']) }}">{% include 'suivi_echanges.html' %}</div>
 {% if t['status'] != 'Clos' %}
 <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
 <label for="body">{{ 'Le problème persiste ? Répondez ici pour rouvrir le ticket.' if t['status']=='Résolu' else 'Ajouter une précision' }}</label>
@@ -17,4 +16,26 @@
 <p><button class="btn sm">Envoyer</button></p></form>
 {% else %}<p class="meta">Ce ticket est clos. Pour un nouveau problème, créez une nouvelle demande.</p>{% endif %}
 </div>
+<script>
+(function(){
+  var box=document.getElementById('thread'), st=document.getElementById('st');
+  if(!box)return;
+  var last=box.dataset.last, status=box.dataset.status, busy=false;
+  function check(){
+    if(busy||document.hidden)return; busy=true;
+    fetch(box.dataset.url+'?apres='+last+'&statut='+encodeURIComponent(status),{credentials:'same-origin',cache:'no-store'})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){
+        if(!d||!d.changed)return;
+        if((d.status==='Clos')!==(status==='Clos')){location.reload();return;}
+        box.innerHTML=d.html; last=String(d.last); status=d.status;
+        st.textContent=d.status; st.className='badge s-'+d.slug;
+      })
+      .catch(function(){})
+      .then(function(){busy=false;});
+  }
+  setInterval(check,10000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
+})();
+</script>
 {% endblock %}

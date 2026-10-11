@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block title %}Mes demandes{% endblock %}{% block mainclass %}mid{% endblock %}
+{% block content %}
+<h1>Mes demandes</h1>
+<p class="lead">Les demandes envoyées depuis ce navigateur. Cliquez sur l'une d'elles pour voir les réponses du service informatique.</p>
+{% if not tickets and not projets %}<div class="panel empty">Aucune demande enregistrée sur ce navigateur.<br>
+<a class="btn sm" style="margin-top:12px" href="{{ url_for('nouveau') }}">Faire une demande</a>
+<a class="btn sec sm" style="margin-top:12px" href="{{ url_for('mes_liens') }}">Recevoir mes liens par email</a></div>{% endif %}
+{% if tickets %}<h2>Réclamations</h2>
+<div class="panel tablewrap" style="padding:0"><table><thead><tr><th>N°</th><th>Sujet</th><th>Statut</th><th>Dernière activité</th></tr></thead><tbody>
+{% for t in tickets %}<tr><td>#{{ t['id'] }}</td>
+ <td><a class="t" href="{{ url_for('suivi', token=t['token']) }}">{{ t['title'] }}</a><div class="meta">{{ t['category'] }} · ouverte le {{ t['created_at']|dt }}</div></td>
+ <td><span class="badge s-{{ t['status']|slug }}">{{ t['status'] }}</span></td><td class="meta">{{ t['updated_at']|dt }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+{% if projets %}<h2>Demandes de projet</h2>
+<div class="panel tablewrap" style="padding:0"><table><thead><tr><th>N°</th><th>Sujet</th><th>Statut</th><th>Dernière activité</th></tr></thead><tbody>
+{% for p in projets %}<tr><td>#{{ p['id'] }}</td>
+ <td><a class="t" href="{{ url_for('projet_suivi', token=p['token']) }}">{{ p['title'] }}</a><div class="meta">demandé le {{ p['created_at']|dt }}</div></td>
+ <td><span class="badge s-{{ p['status']|slug }}">{{ 'En attente de validation' if p['status']=='Proposé' else p['status'] }}</span></td><td class="meta">{{ p['updated_at']|dt }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+<p class="meta">Cette liste est propre à ce navigateur. Sur un autre ordinateur ou après avoir effacé les cookies, <a href="{{ url_for('mes_liens') }}">recevez vos liens par email</a>.</p>
+{% endblock %}

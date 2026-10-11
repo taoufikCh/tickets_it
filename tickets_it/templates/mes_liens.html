@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block title %}Recevoir mes liens{% endblock %}{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<p class="meta" style="margin:0 0 6px"><a href="{{ url_for('mes_demandes') }}">← Mes demandes</a></p>
+<h1>Recevoir mes liens par email</h1>
+<p class="lead">Saisissez l'adresse email indiquée lors de vos demandes : nous vous envoyons la liste de vos réclamations et projets, avec un lien de suivi pour chacun.</p>
+<form method="post" class="panel"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<label for="email" style="margin-top:0">Votre adresse email</label>
+<input id="email" type="email" name="email" value="{{ email }}" autocomplete="email" autofocus required>
+<p class="meta" style="margin:8px 0 0">Les liens sont envoyés uniquement à cette adresse.</p>
+<p style="margin:18px 0 0"><button class="btn">Envoyer mes liens</button></p></form>
+{% endblock %}

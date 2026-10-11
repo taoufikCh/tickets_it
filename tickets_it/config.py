@@ -255,7 +255,7 @@ NOM_DEFAUT = "Support informatique"
 ROLES = {"admin": "Administrateur", "tech": "Technicien", "lecteur": "Lecteur (lecture seule)"}
 
 
-LECTEUR_AUTORISE = {"logout", "account", "login", "nouveau", "suivi", "projet_suivi"}
+LECTEUR_AUTORISE = {"logout", "account", "login", "nouveau", "suivi", "projet_suivi", "mes_liens"}
 
 
 # --- Textes des emails (personnalisables dans Paramètres → Notifications) -------
@@ -293,6 +293,11 @@ MAIL_TEMPLATES = {
         "subject": "[Projet #{numero}] {objet}",
         "body": "Bonjour {nom},\n\n{texte}\n\nSuivi : {lien}\n\n{signature}",
         "vars": ["nom", "numero", "titre", "objet", "texte", "lien"]},
+    "mes_liens": {
+        "label": "Liens de suivi envoyés à la demande du demandeur", "to": "demandeur",
+        "subject": "Vos demandes au service informatique",
+        "body": "Bonjour,\n\nVoici vos demandes enregistrées avec cette adresse email :\n\n{liste}\n\nSi vous n'êtes pas à l'origine de cet envoi, ignorez simplement ce message.\n\n{signature}",
+        "vars": ["liste"]},
     "staff_ticket": {
         "label": "Alerte : nouveau ticket", "to": "technicien",
         "subject": "[Nouveau ticket #{numero}] {urgence}{titre}",
